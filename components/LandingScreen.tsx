@@ -283,6 +283,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
                   ))}
                 </div>
               </div>
+
+              {/* API Key */}
+              <div className="space-y-4">
+                <div className="text-sm font-bold text-white tracking-wide">GEMINI API KEY</div>
+                <input
+                  type="password"
+                  placeholder="Enter your API Key"
+                  value={settings.apiKey || ''}
+                  onChange={(e) => onUpdateSettings({ ...settings, apiKey: e.target.value })}
+                  className="w-full bg-zinc-800 text-white rounded-lg p-3 text-sm border border-white/10 focus:border-yellow-600 focus:outline-none"
+                />
+                <p className="text-[10px] text-gray-500">Required for AI Dealer commentary. Key is stored locally in your browser.</p>
+              </div>
             </div>
 
             <motion.button
