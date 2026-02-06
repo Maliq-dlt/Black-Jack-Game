@@ -4,84 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Royale Blackjack AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
       @import url("https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;700&family=Special+Elite&family=Inter:wght@400;500;600&display=swap");
-
-      body {
-        font-family: "Crimson Pro", serif;
-        background-color: #0c0e0c;
-        overflow: hidden;
-      }
-
-      .gritty-noise {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        opacity: 0.12;
-        z-index: 50;
-        pointer-events: none;
-        background-image: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
-        mix-blend-mode: overlay;
-      }
-
-      .parchment-bg {
-        background-color: #d9c5a3;
-        background-image: url("https://www.transparenttextures.com/patterns/aged-paper.png");
-      }
-
-      .ink-border {
-        border: 2px solid rgba(0,0,0,0.8);
-        border-radius: 2px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.5);
-      }
-
-      .felt-bg {
-        background: 
-          radial-gradient(ellipse at top, rgba(21, 128, 61, 0.3) 0%, transparent 50%),
-          radial-gradient(ellipse at bottom, rgba(20, 83, 45, 0.5) 0%, transparent 50%),
-          radial-gradient(circle at center, #15803d 0%, #14532d 60%, #0f2616 100%);
-        box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.6);
-        position: relative;
-      }
-      
-      .felt-bg::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background-image: 
-          repeating-linear-gradient(0deg, transparent, transparent 50px, rgba(255,255,255,0.01) 50px, rgba(255,255,255,0.01) 51px),
-          repeating-linear-gradient(90deg, transparent, transparent 50px, rgba(255,255,255,0.01) 50px, rgba(255,255,255,0.01) 51px);
-        pointer-events: none;
-      }
-
-      /* Utilities for 3D Flip */
-      .perspective-1000 {
-        perspective: 1000px;
-      }
-      .transform-style-3d {
-        transform-style: preserve-3d;
-      }
-      .backface-hidden {
-        backface-visibility: hidden;
-      }
-      .rotate-y-180 {
-        transform: rotateY(180deg);
-      }
-      
-      /* Custom scrollbar */
-      ::-webkit-scrollbar {
-        width: 6px;
-      }
-      ::-webkit-scrollbar-track {
-        background: rgba(0,0,0,0.2);
-      }
-      ::-webkit-scrollbar-thumb {
-        background: rgba(255,215,0,0.3);
-        border-radius: 3px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: rgba(255,215,0,0.5);
-      }
     </style>
   </head>
   <body>
