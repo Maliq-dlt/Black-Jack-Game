@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { motion } from 'framer-motion';
 import { Card, Rank, Suit, WildCardType } from '../types';
 import { SUIT_COLORS } from '../constants';
@@ -12,7 +12,9 @@ interface CardComponentProps {
   isLosing?: boolean;
 }
 
-const CardComponent: React.FC<CardComponentProps> = ({ 
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when parent state updates (e.g., betting, timer)
+// but card props remain unchanged. This significantly reduces render load during gameplay animations.
+const CardComponent: React.FC<CardComponentProps> = memo(({
   card, 
   isHidden, 
   className = '', 
@@ -149,6 +151,6 @@ const CardComponent: React.FC<CardComponentProps> = ({
       </motion.div>
     </div>
   );
-};
+});
 
 export default CardComponent;
