@@ -214,71 +214,81 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
           />
           
           <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="relative w-full max-w-md bg-zinc-900 border border-white/10 rounded-2xl p-8 shadow-2xl"
+            initial={{ scale: 0.9, opacity: 0, rotate: 1 }}
+            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+            exit={{ scale: 0.9, opacity: 0, rotate: -1 }}
+            className="relative w-full max-w-md bg-[#d1c7a7] border-2 border-[#1a1a1a] p-10 shadow-[0_20px_60px_rgba(0,0,0,0.6)] font-['Special_Elite'] overflow-hidden"
+            style={{ clipPath: 'polygon(1% 0%, 99% 2%, 100% 50%, 98% 99%, 0% 100%, 2% 50%)' }}
           >
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-bold text-white tracking-wider">SETTINGS</h2>
-              <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            {/* Ink Grain Overlay */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/handmade-paper.png')]" />
+
+            <div className="flex justify-between items-center mb-10 border-b-2 border-[#1a1a1a]/20 pb-6 relative z-10">
+              <h2 className="text-4xl font-black text-[#1a1a1a] tracking-widest">SETTINGS</h2>
+              <button 
+                onClick={onClose} 
+                className="text-[#1a1a1a]/40 hover:text-[#8b0000] transition-colors group"
+              >
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
             <div className="space-y-8">
               {/* Volume */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center text-sm font-bold text-gray-400">
+              <div className="space-y-6 relative z-10">
+                <div className="flex justify-between items-center text-sm font-black text-[#1a1a1a]/60 tracking-widest">
                   <span>MASTER VOLUME</span>
-                  <span className="text-white">{Math.round(settings.volume * 100)}%</span>
+                  <span className="text-[#8b0000] text-xl">{Math.round(settings.volume * 100)}%</span>
                 </div>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="1" 
-                  step="0.01"
-                  value={settings.volume}
-                  onChange={(e) => onUpdateSettings({ ...settings, volume: parseFloat(e.target.value) })}
-                  className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-yellow-600"
-                />
+                <div className="relative h-10 flex items-center">
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="1" 
+                    step="0.01"
+                    value={settings.volume}
+                    onChange={(e) => onUpdateSettings({ ...settings, volume: parseFloat(e.target.value) })}
+                    className="w-full h-2 bg-black/10 rounded-full appearance-none cursor-pointer accent-[#8b0000] border border-[#1a1a1a]/10"
+                  />
+                </div>
               </div>
 
               {/* Dealer Voice */}
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center relative z-10 py-4 border-y-2 border-[#1a1a1a]/5">
                 <div className="space-y-1">
-                  <div className="text-sm font-bold text-white tracking-wide">DEALER VOICE</div>
-                  <div className="text-xs text-gray-400">Hear AI commentary text-to-speech</div>
+                  <div className="text-sm font-black text-[#1a1a1a] tracking-widest">DEALER VOICE</div>
+                  <div className="text-[10px] text-[#1a1a1a]/40 font-serif italic">Hear AI commentary text-to-speech</div>
                 </div>
                 <button 
                   onClick={() => onUpdateSettings({ ...settings, isVoiceEnabled: !settings.isVoiceEnabled })}
-                  className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 ${settings.isVoiceEnabled ? 'bg-yellow-600' : 'bg-zinc-700'}`}
+                  className={`w-14 h-7 rounded-full p-1 transition-colors duration-200 border-2 border-[#1a1a1a]/20 ${settings.isVoiceEnabled ? 'bg-[#8b0000]' : 'bg-black/10'}`}
                 >
                   <motion.div 
-                    animate={{ x: settings.isVoiceEnabled ? 24 : 0 }}
-                    className="w-4 h-4 bg-white rounded-full shadow-md"
+                    animate={{ x: settings.isVoiceEnabled ? 28 : 0 }}
+                    className="w-5 h-5 bg-[#d1c7a7] rounded-full shadow-lg border border-[#1a1a1a]/20"
                   />
                 </button>
               </div>
 
               {/* Table Themes */}
-              <div className="space-y-4">
-                <div className="text-sm font-bold text-white tracking-wide">TABLE THEME</div>
+              <div className="space-y-5 relative z-10">
+                <div className="text-sm font-black text-[#1a1a1a]/60 tracking-widest">TABLE THEME</div>
                 <div className="grid grid-cols-2 gap-3">
                   {Object.values(TableTheme).map((theme) => (
                     <button
                       key={theme}
                       onClick={() => onUpdateSettings({ ...settings, theme })}
                       className={`
-                        py-3 px-4 rounded-xl border-2 text-xs font-bold transition-all
+                        py-4 px-4 border-2 text-[10px] font-black tracking-widest transition-all
                         ${settings.theme === theme 
-                          ? 'border-yellow-600 bg-yellow-600/10 text-white' 
-                           : 'border-white/5 bg-white/5 text-gray-400 hover:bg-white/10 hover:border-white/10'}
+                          ? 'border-[#8b0000] bg-[#8b0000]/10 text-[#8b0000] shadow-inner' 
+                           : 'border-[#1a1a1a]/10 bg-black/5 text-[#1a1a1a]/40 hover:bg-white/40 hover:border-[#1a1a1a]/30'}
                       `}
+                      style={{ clipPath: 'polygon(2% 10%, 98% 5%, 95% 95%, 5% 90%)' }}
                     >
-                      {theme.replace('_', ' ')}
+                      {theme.replace('_', ' ').toUpperCase()}
                     </button>
                   ))}
                 </div>
@@ -302,9 +312,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={onClose}
-              className="w-full mt-10 py-4 bg-white text-black font-bold rounded-xl tracking-[0.2em]"
+              className="w-full mt-12 py-5 bg-[#1a1a1a] text-[#d1c7a7] font-black text-xl tracking-[0.4em] shadow-2xl relative z-10 transition-colors hover:bg-black"
+              style={{ clipPath: 'polygon(1% 5%, 99% 1%, 98% 95%, 2% 98%)' }}
             >
-              SAVE CHANGES
+              FINALIZE CHANGES
             </motion.button>
           </motion.div>
         </div>

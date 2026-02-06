@@ -12,35 +12,40 @@ interface ChipProps {
 
 const Chip: React.FC<ChipProps> = ({ value, onClick, disabled, color, isStacked = false, stackIndex = 0 }) => {
   const colors = {
-    red: { // Blood Token
-      bg: 'bg-[#3a0a0a]',
-      border: 'border-[#8b0000]/40',
-      text: 'text-[#8b0000]',
-      shadow: 'shadow-black/80'
+    red: { // Blood Bone Token
+      bg: 'bg-gradient-to-b from-[#3d2e24] to-[#2a1f18]',
+      border: 'border-[#8b1a1a]',
+      text: 'text-[#ff6b35]',
+      shadow: 'shadow-[0_0_15px_rgba(139,26,26,0.4)]',
+      glow: 'hover:shadow-[0_0_20px_rgba(255,107,53,0.5)]'
     },
-    blue: { // Spirit Token
-      bg: 'bg-[#0a1a1a]',
-      border: 'border-[#008b8b]/40',
-      text: 'text-[#008b8b]',
-      shadow: 'shadow-black/80'
+    blue: { // Spirit Bone Token
+      bg: 'bg-gradient-to-b from-[#2a2a3d] to-[#1a1a2e]',
+      border: 'border-[#4a6fa5]',
+      text: 'text-[#7cb9e8]',
+      shadow: 'shadow-[0_0_15px_rgba(74,111,165,0.3)]',
+      glow: 'hover:shadow-[0_0_20px_rgba(124,185,232,0.5)]'
     },
-    green: { // Moss Token
-      bg: 'bg-[#1a231a]',
-      border: 'border-[#1a3a1a]/40',
-      text: 'text-[#2f3526]',
-      shadow: 'shadow-black/80'
+    green: { // Moss Stone Token
+      bg: 'bg-gradient-to-b from-[#2a3d2a] to-[#1a2a1a]',
+      border: 'border-[#3d5a3d]',
+      text: 'text-[#8fbc8f]',
+      shadow: 'shadow-[0_0_15px_rgba(61,90,61,0.3)]',
+      glow: 'hover:shadow-[0_0_20px_rgba(143,188,143,0.5)]'
     },
-    black: { // Iron Token
-      bg: 'bg-[#1a1a1a]',
-      border: 'border-white/10',
-      text: 'text-gray-400',
-      shadow: 'shadow-black/80'
+    black: { // Obsidian Token
+      bg: 'bg-gradient-to-b from-[#1a1410] to-[#0a0806]',
+      border: 'border-[#3d2e24]',
+      text: 'text-[#a89878]',
+      shadow: 'shadow-[0_0_15px_rgba(0,0,0,0.6)]',
+      glow: 'hover:shadow-[0_0_20px_rgba(168,152,120,0.4)]'
     },
-    purple: { // Void Token
-      bg: 'bg-[#1a0a1a]',
-      border: 'border-[#4b0082]/40',
-      text: 'text-[#4b0082]',
-      shadow: 'shadow-black/80'
+    purple: { // Void Stone Token
+      bg: 'bg-gradient-to-b from-[#2a1a2a] to-[#1a0a1a]',
+      border: 'border-[#5a3d5a]',
+      text: 'text-[#d4a24c]',
+      shadow: 'shadow-[0_0_15px_rgba(90,61,90,0.3)]',
+      glow: 'hover:shadow-[0_0_20px_rgba(212,162,76,0.5)]'
     },
   };
 
@@ -54,41 +59,45 @@ const Chip: React.FC<ChipProps> = ({ value, onClick, disabled, color, isStacked 
       animate={isStacked ? { scale: 1, y: -stackIndex * 4 } : {}}
       whileHover={disabled ? {} : { 
         scale: 1.15, 
-        y: isStacked ? -stackIndex * 4 - 8 : -8,
-        rotate: [0, -5, 5, 0],
-        transition: { duration: 0.2 }
+        y: isStacked ? -stackIndex * 4 - 10 : -10,
+        transition: { duration: 0.15 }
       }}
       whileTap={disabled ? {} : { 
-        scale: 0.95,
-        transition: { duration: 0.1 }
+        scale: 0.9,
+        transition: { duration: 0.08 }
       }}
-      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 20 }}
       className={`
-        relative w-16 h-16 shadow-2xl flex items-center justify-center
-        ${chipStyle.bg} ${chipStyle.shadow}
+        relative w-16 h-16 flex items-center justify-center rounded-full
+        ${chipStyle.bg} ${chipStyle.shadow} ${chipStyle.glow}
         ${disabled ? 'opacity-40 cursor-not-allowed grayscale' : 'cursor-pointer'}
-        transform-gpu border-2 ${chipStyle.border}
+        transform-gpu border-3 ${chipStyle.border}
+        transition-shadow duration-200
       `}
       style={{ 
-        clipPath: 'polygon(5% 0%, 95% 5%, 100% 50%, 90% 95%, 10% 100%, 0% 55%)',
         boxShadow: isStacked 
-          ? `0 ${4 + stackIndex * 2}px ${8 + stackIndex * 4}px rgba(0,0,0,0.8)` 
-          : '0 10px 20px rgba(0,0,0,0.8)'
+          ? `0 ${4 + stackIndex * 2}px ${8 + stackIndex * 4}px rgba(0,0,0,0.9)` 
+          : '0 8px 24px rgba(0,0,0,0.9), inset 0 1px 0 rgba(212,162,76,0.1)'
       }}
     >
-      {/* Texture Overlay */}
-      <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]" />
+      {/* Stone/Bone Texture Overlay */}
+      <div className="absolute inset-0 rounded-full opacity-30 pointer-events-none mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/stone-wall.png')]" />
       
-      {/* Inner carved circle */}
-      <div className="w-11 h-11 border border-black/40 flex items-center justify-center bg-black/5 opacity-80"
-           style={{ clipPath: 'polygon(10% 10%, 90% 5%, 95% 90%, 5% 95%)' }}>
-        <span className={`font-['Special_Elite'] font-bold text-lg ${chipStyle.text} drop-shadow-sm`}>
+      {/* Carved inner circle with rune-like border */}
+      <div 
+        className="w-11 h-11 border-2 border-[#0a0806]/60 flex items-center justify-center rounded-full relative"
+        style={{ 
+          background: 'radial-gradient(circle at 30% 30%, rgba(212,162,76,0.1), transparent 60%)',
+          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5), inset 0 -1px 0 rgba(212,162,76,0.1)'
+        }}
+      >
+        <span className={`font-['Cinzel'] font-bold text-xl ${chipStyle.text} drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]`}>
           {value}
         </span>
       </div>
       
-      {/* Weathering effect */}
-      <div className="absolute inset-0 border border-white/5 pointer-events-none" />
+      {/* Subtle amber highlight on top edge */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-transparent via-[#d4a24c]/20 to-transparent rounded-full pointer-events-none" />
     </motion.button>
   );
 };

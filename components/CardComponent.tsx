@@ -62,62 +62,69 @@ const CardComponent: React.FC<CardComponentProps> = memo(({
         }}
         animate={{ 
           opacity: 1, 
-          y: 0, 
+          y: [0, -2, 0], // Subtle idle wobble
           x: 0, 
           scale: 1, 
-          rotateZ: 0,
+          rotateZ: [0, 0.5, 0, -0.5, 0], // Slight rotation wobble
           rotateY: isHidden ? 180 : 0,
           boxShadow: glowEffect
         }}
         whileHover={{
-          scale: 1.2,
-          y: -15,
+          scale: 1.15,
+          y: -20,
           zIndex: 100,
-          rotateZ: -2,
-          boxShadow: "0 20px 40px -10px rgba(0, 0, 0, 0.9), 0 0 15px rgba(255, 255, 255, 0.2)",
-          transition: { duration: 0.2, ease: "easeOut" }
+          rotateZ: -3,
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.95), 0 0 20px rgba(255, 255, 255, 0.15)",
+          transition: { duration: 0.15, ease: "easeOut" }
         }}
         transition={{ 
           type: "spring",
-          stiffness: 180,
-          damping: 25,
-          mass: 1.2,
+          stiffness: 220,
+          damping: 20,
+          mass: 0.8,
           delay: dealDelay,
-          rotateY: { duration: 0.7, ease: "easeInOut" },
-          boxShadow: { duration: 0.5 }
+          y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+          rotateZ: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+          rotateY: { duration: 0.5, ease: "easeOut" },
+          boxShadow: { duration: 0.3 }
         }}
         className="w-full h-full transform-style-3d rounded-sm"
       >
-        {/* Front Face - Parchment Style */}
+        {/* Front Face - Inscryption Dark Leather Style */}
         <div 
-          className="absolute inset-0 backface-hidden parchment-bg rounded-sm flex flex-col justify-between p-2 select-none border-2 border-black/80 overflow-hidden"
+          className="absolute inset-0 backface-hidden rounded-sm flex flex-col justify-between p-2 select-none overflow-hidden"
           style={{ 
-            clipPath: 'polygon(1% 1%, 98% 0%, 100% 2%, 99% 97%, 97% 100%, 2% 99%, 0% 98%, 1% 3%)',
-            boxShadow: 'inset 0 0 20px rgba(0,0,0,0.3)'
+            background: 'linear-gradient(145deg, #2a1f18 0%, #1a1410 50%, #0f0c08 100%)',
+            border: '3px solid #3d2e24',
+            clipPath: 'polygon(2% 0%, 98% 1%, 100% 3%, 99% 97%, 97% 100%, 3% 99%, 0% 96%, 1% 2%)',
+            boxShadow: 'inset 0 1px 0 rgba(212, 162, 76, 0.15), inset 0 -2px 0 rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.8)'
           }}
         >
-          {/* Subtle Grain Overlay */}
-          <div className="absolute inset-0 opacity-10 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]" />
+          {/* Inner Border Accent */}
+          <div className="absolute inset-[3px] pointer-events-none border border-[#d4a24c]/20 rounded-sm" />
+          
+          {/* Leather Grain Overlay */}
+          <div className="absolute inset-0 opacity-15 pointer-events-none mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/leather.png')]" />
 
-          <div className={`text-xl font-bold leading-none ${colorClass} text-left font-serif`}>
+          <div className={`text-xl font-bold leading-none ${colorClass} text-left font-['Cinzel'] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]`}>
             {card.rank}
-            <div className="text-sm mt-0.5 opacity-80">{card.suit}</div>
+            <div className="text-sm mt-0.5 opacity-90">{card.suit}</div>
           </div>
 
-          <div className={`absolute inset-0 flex items-center justify-center text-6xl ${colorClass} opacity-70 blur-[0.2px] mix-blend-darken`}>
+          <div className={`absolute inset-0 flex items-center justify-center text-6xl ${colorClass} opacity-80 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]`}>
             {card.suit}
           </div>
 
-          <div className={`text-xl font-bold leading-none ${colorClass} text-right transform rotate-180 font-serif`}>
+          <div className={`text-xl font-bold leading-none ${colorClass} text-right transform rotate-180 font-['Cinzel'] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]`}>
             {card.rank}
-            <div className="text-sm mt-0.5 opacity-80">{card.suit}</div>
+            <div className="text-sm mt-0.5 opacity-90">{card.suit}</div>
           </div>
           
-          {/* Wild Card Seal */}
+          {/* Wild Card Seal - Blood Red */}
           {card.wildType && card.wildType !== WildCardType.None && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-12 opacity-30 pointer-events-none">
-                <div className="border-4 border-current p-2 rounded-full flex items-center justify-center">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-[#8b0000]">CURSED</span>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-12 opacity-40 pointer-events-none">
+                <div className="border-2 border-[#8b1a1a] p-2 rounded-full flex items-center justify-center bg-[#8b1a1a]/20">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#ff6b35]">CURSED</span>
                 </div>
             </div>
           )}
@@ -125,7 +132,7 @@ const CardComponent: React.FC<CardComponentProps> = memo(({
           {/* Bottom Label for effect cards */}
           {card.wildType && card.wildType !== WildCardType.None && (
             <div className="absolute bottom-2 left-1/2 -translate-x-1/2 scale-75 opacity-90">
-              <span className="text-[8px] font-bold uppercase tracking-widest bg-black text-yellow-500 px-1 py-0.5 ink-border">
+              <span className="text-[8px] font-bold uppercase tracking-widest bg-[#0a0806] text-[#d4a24c] px-2 py-0.5 border border-[#d4a24c]/50">
                 {card.wildType === WildCardType.BonusCash ? 'JACKPOT' : 
                  card.wildType === WildCardType.Shielded ? 'SHIELD' :
                  card.wildType === WildCardType.FreeHit ? 'FREE' : 'GILDED'}

@@ -17,16 +17,18 @@ export const BOSS_DATA: BossData[] = [
     personality: BossPersonality.Calculating,
     stageAppears: 5,
     rewardMultiplier: 1.5,
-    specialAbility: {
-      name: 'Calculated Risk',
-      description: 'Always hits until reaching 19 or higher',
-      triggerCondition: 'Every dealer turn',
-    },
+
     visualTheme: {
       primaryColor: '#1a1a2e',
       secondaryColor: '#e94560',
       icon: '🎯',
     },
+    maxHealth: 1000,
+    currentHealth: 1000,
+    phase: 'intro' as const,
+    abilities: [
+      { id: 'ab1', name: 'Precision Shot', description: 'Next hit is guaranteed 10.', icon: '🎯', cooldown: 5000, lastUsed: 0 }
+    ],
     dialogue: {
       intro: [
         "Perfection is not optional. It is the only acceptable outcome.",
@@ -73,16 +75,18 @@ export const BOSS_DATA: BossData[] = [
     personality: BossPersonality.Unpredictable,
     stageAppears: 10,
     rewardMultiplier: 2.0,
-    specialAbility: {
-      name: 'Wild Multiplier',
-      description: 'Random payout multiplier between 0.5x and 3x',
-      triggerCondition: 'On every round result',
-    },
+
     visualTheme: {
       primaryColor: '#ff6b6b',
       secondaryColor: '#feca57',
       icon: '🎲',
     },
+    maxHealth: 2500,
+    currentHealth: 2500,
+    phase: 'intro' as const,
+    abilities: [
+      { id: 'ab2', name: 'Double Down', description: 'Doubles the current stakes.', icon: '🎲', cooldown: 8000, lastUsed: 0 }
+    ],
     dialogue: {
       intro: [
         "Life's a gamble, kid. Let's roll the dice!",
@@ -129,16 +133,18 @@ export const BOSS_DATA: BossData[] = [
     personality: BossPersonality.Calculating,
     stageAppears: 15,
     rewardMultiplier: 2.0,
-    specialAbility: {
-      name: 'Peek',
-      description: 'Can see one of your face-down cards',
-      triggerCondition: 'Start of each hand',
-    },
+
     visualTheme: {
       primaryColor: '#2c3e50',
       secondaryColor: '#9b59b6',
       icon: '👁️',
     },
+    maxHealth: 5000,
+    currentHealth: 5000,
+    phase: 'intro' as const,
+    abilities: [
+      { id: 'ab3', name: 'Shadow Peek', description: 'Reveals all hidden cards.', icon: '👁️', cooldown: 10000, lastUsed: 0 }
+    ],
     dialogue: {
       intro: [
         "I see everything. Even what you try to hide.",
@@ -185,16 +191,18 @@ export const BOSS_DATA: BossData[] = [
     personality: BossPersonality.Intimidating,
     stageAppears: 20,
     rewardMultiplier: 2.5,
-    specialAbility: {
-      name: 'Soul Drain',
-      description: 'Push = You lose a card from your deck permanently',
-      triggerCondition: 'On push result',
-    },
+
     visualTheme: {
       primaryColor: '#1a0a2e',
       secondaryColor: '#8b0000',
       icon: '💀',
     },
+    maxHealth: 10000,
+    currentHealth: 10000,
+    phase: 'intro' as const,
+    abilities: [
+      { id: 'ab4', name: 'Death Touch', description: 'Deals 500 damage to your bankroll.', icon: '💀', cooldown: 15000, lastUsed: 0 }
+    ],
     dialogue: {
       intro: [
         "Welcome to the table of the damned.",
@@ -241,16 +249,18 @@ export const BOSS_DATA: BossData[] = [
     personality: BossPersonality.Calculating,
     stageAppears: 25,
     rewardMultiplier: 3.0,
-    specialAbility: {
-      name: 'Compound Interest',
-      description: 'Stakes double every round. Hits cost $10 extra.',
-      triggerCondition: 'Every round',
-    },
+
     visualTheme: {
       primaryColor: '#1a1a1a',
       secondaryColor: '#d4af37',
       icon: '💰',
     },
+    maxHealth: 15000,
+    currentHealth: 15000,
+    phase: 'intro' as const,
+    abilities: [
+      { id: 'ab5', name: 'Market Crash', description: 'Halves your current win multiplier.', icon: '📉', cooldown: 20000, lastUsed: 0 }
+    ],
     dialogue: {
       intro: [
         "Money talks. And right now, it's laughing at you.",
@@ -297,16 +307,18 @@ export const BOSS_DATA: BossData[] = [
     personality: BossPersonality.Aggressive,
     stageAppears: 30,
     rewardMultiplier: 2.5,
-    specialAbility: {
-      name: 'Sticky Fingers',
-      description: 'Steals 10% of your chips when you bust',
-      triggerCondition: 'Player bust',
-    },
+
     visualTheme: {
       primaryColor: '#2d3436',
       secondaryColor: '#00b894',
       icon: '🃏',
     },
+    maxHealth: 20000,
+    currentHealth: 20000,
+    phase: 'intro' as const,
+    abilities: [
+      { id: 'ab6', name: 'Pickpocket', description: 'Steals 100 gold.', icon: '🧤', cooldown: 12000, lastUsed: 0 }
+    ],
     dialogue: {
       intro: [
         "Nice chips you got there. Be a shame if they... disappeared.",
@@ -353,16 +365,18 @@ export const BOSS_DATA: BossData[] = [
     personality: BossPersonality.Intimidating,
     stageAppears: 35,
     rewardMultiplier: 2.5,
-    specialAbility: {
-      name: 'Fade to Black',
-      description: 'One of your cards becomes invisible until reveal',
-      triggerCondition: 'After deal',
-    },
+
     visualTheme: {
       primaryColor: '#0a0a0a',
       secondaryColor: '#6c5ce7',
       icon: '👻',
     },
+    maxHealth: 30000,
+    currentHealth: 30000,
+    phase: 'intro' as const,
+    abilities: [
+      { id: 'ab7', name: 'Ethereal Mist', description: 'Makes all cards blurry for 10s.', icon: '🌫️', cooldown: 25000, lastUsed: 0 }
+    ],
     dialogue: {
       intro: [
         "What you see... is not always what is.",
@@ -409,16 +423,18 @@ export const BOSS_DATA: BossData[] = [
     personality: BossPersonality.Defensive,
     stageAppears: 40,
     rewardMultiplier: 3.0,
-    specialAbility: {
-      name: 'Reflection',
-      description: 'Copies your last action',
-      triggerCondition: 'After player action',
-    },
+
     visualTheme: {
       primaryColor: '#b8b8b8',
       secondaryColor: '#e0e0e0',
       icon: '🪞',
     },
+    maxHealth: 40000,
+    currentHealth: 40000,
+    phase: 'intro' as const,
+    abilities: [
+      { id: 'ab8', name: 'Reframing', description: 'Copies your last ability.', icon: '🔄', cooldown: 15000, lastUsed: 0 }
+    ],
     dialogue: {
       intro: [
         "I am you. You are me. We are one.",
@@ -465,16 +481,18 @@ export const BOSS_DATA: BossData[] = [
     personality: BossPersonality.Unpredictable,
     stageAppears: 45,
     rewardMultiplier: 3.0,
-    specialAbility: {
-      name: 'Sleight of Hand',
-      description: 'Randomly swaps cards between hands',
-      triggerCondition: 'Random - 30% chance per round',
-    },
+
     visualTheme: {
       primaryColor: '#6c3483',
       secondaryColor: '#f39c12',
       icon: '🎭',
     },
+    maxHealth: 50000,
+    currentHealth: 50000,
+    phase: 'intro' as const,
+    abilities: [
+      { id: 'ab9', name: 'Mind Games', description: 'Shuffles your hand ranks.', icon: '🧠', cooldown: 30000, lastUsed: 0 }
+    ],
     dialogue: {
       intro: [
         "Nothing is as it seems in my domain!",
@@ -526,16 +544,18 @@ export const BOSS_DATA: BossData[] = [
     personality: BossPersonality.Intimidating,
     stageAppears: 50,
     rewardMultiplier: 5.0,
-    specialAbility: {
-      name: 'House Rules',
-      description: 'All boss traits are active. Push = Loss. No mercy.',
-      triggerCondition: 'Always active',
-    },
+
     visualTheme: {
       primaryColor: '#000000',
       secondaryColor: '#8b0000',
       icon: '🏛️',
     },
+    maxHealth: 100000,
+    currentHealth: 100000,
+    phase: 'intro' as const,
+    abilities: [
+      { id: 'ab10', name: 'House Always Wins', description: 'Ends the round immediately.', icon: '🔚', cooldown: 60000, lastUsed: 0 }
+    ],
     dialogue: {
       intro: [
         "I AM THE HOUSE. AND THE HOUSE ALWAYS WINS.",

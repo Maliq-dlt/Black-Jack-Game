@@ -10,10 +10,10 @@ interface DeckViewerProps {
 }
 
 const SUIT_COLORS: Record<Suit, string> = {
-  [Suit.Hearts]: 'text-red-500',
-  [Suit.Diamonds]: 'text-red-500',
-  [Suit.Clubs]: 'text-white',
-  [Suit.Spades]: 'text-white'
+  [Suit.Hearts]: 'text-[#8b0000]',
+  [Suit.Diamonds]: 'text-[#8b0000]',
+  [Suit.Clubs]: 'text-[#1a1a1a]',
+  [Suit.Spades]: 'text-[#1a1a1a]'
 };
 
 const DeckViewer: React.FC<DeckViewerProps> = ({ isOpen, onClose, deck, removedRanks }) => {
@@ -45,29 +45,33 @@ const DeckViewer: React.FC<DeckViewerProps> = ({ isOpen, onClose, deck, removedR
           className="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4"
         >
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="relative w-full max-w-2xl bg-zinc-900 border border-blue-500/30 rounded-3xl p-8 shadow-2xl"
+            initial={{ scale: 0.9, opacity: 0, rotate: -1 }}
+            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+            exit={{ scale: 0.9, opacity: 0, rotate: 1 }}
+            className="relative w-full max-w-2xl bg-[#d1c7a7] border-2 border-[#1a1a1a] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
+            style={{ clipPath: 'polygon(0% 1%, 100% 0%, 99% 98%, 1% 100%, 0% 50%)' }}
           >
+            {/* Ink Grain Overlay */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/handmade-paper.png')]" />
+
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-10 border-b-2 border-[#1a1a1a]/20 pb-6 relative z-10">
               <div>
-                <h2 className="text-2xl font-serif font-bold text-white tracking-wider">DECK ORACLE</h2>
-                <p className="text-blue-400 text-xs font-mono uppercase tracking-widest">{totalCards} Cards Remaining</p>
+                <h2 className="text-4xl font-['Special_Elite'] font-black text-[#1a1a1a] tracking-widest">DECK ORACLE</h2>
+                <p className="text-[#8b0000] text-sm font-bold tracking-[0.4em] font-serif uppercase mt-2">{totalCards} Cards Remaining</p>
               </div>
               <button 
                 onClick={onClose}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                className="p-2 hover:bg-black/5 rounded-full transition-colors group"
               >
-                <svg className="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg className="w-8 h-8 text-[#1a1a1a]/40 group-hover:text-[#8b0000]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
             {/* Card Grid */}
-            <div className="grid grid-cols-4 md:grid-cols-7 gap-3 mb-6">
+            <div className="grid grid-cols-4 md:grid-cols-7 gap-3 mb-8 relative z-10">
               {Object.values(Rank).map(rank => {
                 const isRemoved = removedRanks.includes(rank);
                 const data = cardCounts[rank];
@@ -76,22 +80,23 @@ const DeckViewer: React.FC<DeckViewerProps> = ({ isOpen, onClose, deck, removedR
                   <div 
                     key={rank}
                     className={`
-                      relative p-3 rounded-xl border-2 text-center transition-all
+                      relative p-3 border-2 transition-all flex flex-col items-center justify-center font-['Special_Elite']
                       ${isRemoved 
-                        ? 'bg-red-500/5 border-red-500/20 opacity-40' 
+                        ? 'bg-red-500/10 border-[#8b0000]/20 opacity-40' 
                         : data.count > 0 
-                          ? 'bg-white/5 border-white/10 hover:border-blue-500/40' 
-                          : 'bg-zinc-800/50 border-zinc-700/30 opacity-30'}
+                          ? 'bg-black/5 border-[#1a1a1a]/20 hover:border-[#8b0000] hover:bg-white/40' 
+                          : 'bg-black/5 border-[#1a1a1a]/10 opacity-30'}
                     `}
+                    style={{ clipPath: 'polygon(2% 5%, 98% 1%, 95% 95%, 5% 98%)' }}
                   >
-                    <div className={`text-2xl font-black ${isRemoved ? 'text-red-500 line-through' : 'text-white'}`}>
+                    <div className={`text-2xl font-black ${isRemoved ? 'text-[#8b0000] line-through' : 'text-[#1a1a1a]'}`}>
                       {rank}
                     </div>
-                    <div className="text-xs text-gray-400 font-mono mt-1">
-                      {isRemoved ? 'PURGED' : `×${data.count}`}
+                    <div className={`text-sm font-bold ${data.count > 0 ? 'text-[#8b0000]' : 'text-[#1a1a1a]/40'}`}>
+                      {isRemoved ? 'VOID' : `×${data.count}`}
                     </div>
                     {!isRemoved && data.count > 0 && (
-                      <div className="flex justify-center gap-0.5 mt-2">
+                      <div className="flex justify-center gap-0.5 mt-2 opacity-60">
                         {data.suits.map(suit => (
                           <span key={suit} className={`text-[10px] ${SUIT_COLORS[suit]}`}>{suit}</span>
                         ))}
@@ -103,22 +108,22 @@ const DeckViewer: React.FC<DeckViewerProps> = ({ isOpen, onClose, deck, removedR
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 text-center border-t border-white/5 pt-6">
-              <div>
-                <p className="text-xs text-gray-500 uppercase font-bold">High Cards</p>
-                <p className="text-xl font-black text-yellow-400">
+            <div className="grid grid-cols-3 gap-6 text-center border-t-2 border-[#1a1a1a]/20 pt-8 relative z-10 font-['Special_Elite']">
+              <div className="bg-black/5 p-4" style={{ clipPath: 'polygon(1% 10%, 99% 2%, 95% 95%, 5% 90%)' }}>
+                <p className="text-[10px] text-[#1a1a1a]/50 font-black uppercase tracking-widest mb-1">High Cards</p>
+                <p className="text-3xl font-black text-[#1a1a1a]">
                   {deck.filter(c => ['10', 'J', 'Q', 'K', 'A'].includes(c.rank)).length}
                 </p>
               </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase font-bold">Aces</p>
-                <p className="text-xl font-black text-purple-400">
+              <div className="bg-[#8b0000]/5 p-4 border border-[#8b0000]/20" style={{ clipPath: 'polygon(5% 2%, 95% 5%, 99% 98%, 2% 95%)' }}>
+                <p className="text-[10px] text-[#8b0000]/60 font-black uppercase tracking-widest mb-1">Aces</p>
+                <p className="text-3xl font-black text-[#8b0000]">
                   {deck.filter(c => c.rank === Rank.Ace).length}
                 </p>
               </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase font-bold">Low Cards</p>
-                <p className="text-xl font-black text-gray-400">
+              <div className="bg-black/5 p-4" style={{ clipPath: 'polygon(2% 5%, 98% 10%, 90% 95%, 10% 98%)' }}>
+                <p className="text-[10px] text-[#1a1a1a]/50 font-black uppercase tracking-widest mb-1">Low Cards</p>
+                <p className="text-3xl font-black text-gray-500">
                   {deck.filter(c => ['2', '3', '4', '5', '6'].includes(c.rank)).length}
                 </p>
               </div>
@@ -126,9 +131,10 @@ const DeckViewer: React.FC<DeckViewerProps> = ({ isOpen, onClose, deck, removedR
 
             <button
               onClick={onClose}
-              className="w-full mt-6 py-3 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 font-bold rounded-xl border border-blue-500/30 transition-colors"
+              className="w-full mt-10 py-5 bg-[#1a1a1a] text-[#d1c7a7] font-['Special_Elite'] font-black text-xl tracking-[0.4em] hover:bg-black transition-colors shadow-2xl"
+              style={{ clipPath: 'polygon(0.5% 10%, 99% 2%, 98% 90%, 2% 95%)' }}
             >
-              CLOSE ORACLE
+              RESUME TRIAL
             </button>
           </motion.div>
         </motion.div>

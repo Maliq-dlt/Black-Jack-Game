@@ -136,6 +136,7 @@ export enum TableTheme {
   MidnightBlue = 'MIDNIGHT_BLUE',
   CrimsonRoyale = 'CRIMSON_ROYALE',
   CyberNeon = 'CYBER_NEON',
+  CloverPit = 'CLOVER_PIT',
 }
 
 export interface GameSettings {
@@ -316,7 +317,18 @@ export enum BossPersonality {
   Defensive = 'DEFENSIVE',
   Unpredictable = 'UNPREDICTABLE',
   Calculating = 'CALCULATING',
-  Intimidating = 'INTIMIDATING',
+  Intimidating = 'Intimidating',
+}
+
+export type BossPhase = 'intro' | 'phase1' | 'phase2' | 'phase3' | 'enraged' | 'defeated';
+
+export interface BossAbility {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  cooldown: number;
+  lastUsed: number;
 }
 
 export interface BossDialogue {
@@ -335,14 +347,13 @@ export interface BossData {
   title: string;
   traits: BossTrait[];
   personality: BossPersonality;
-  dialogue: BossDialogue;
-  stageAppears: number; // Which stage this boss appears
-  rewardMultiplier: number; // Bonus for defeating
-  specialAbility?: {
-    name: string;
-    description: string;
-    triggerCondition: string;
-  };
+  dialogue: BossDialogue | Record<BossPhase, string[]>;
+  stageAppears: number;
+  rewardMultiplier: number;
+  maxHealth: number;
+  currentHealth: number;
+  phase: BossPhase;
+  abilities: BossAbility[];
   visualTheme: {
     primaryColor: string;
     secondaryColor: string;
@@ -355,6 +366,34 @@ export interface HeatMeter {
   consecutiveWins: number;
   difficultyModifier: number; // 1.0 = normal, 1.5 = hard, etc.
   isHot: boolean; // Triggers special events when hot
+}
+
+// === SHOP SYSTEM ===
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  type: 'joker' | 'consumable' | 'voucher' | 'booster' | 'service';
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'cursed';
+  icon: string;
+  stock?: number;
+  maxStock?: number;
+  discount?: number;
+  isOnSale?: boolean;
+  isLocked?: boolean;
+  unlockRequirement?: string;
+}
+
+export interface ShopState {
+  items: ShopItem[];
+  rerollCost: number;
+  rerollCount: number;
+  interestRate: number;
+  maxInterest: number;
+  saleItemId?: string;
+  lastRestock: number;
 }
 
 
@@ -402,6 +441,9 @@ export interface GameState {
   
   // Heat Meter System
   heatMeter: HeatMeter;
+
+  // Shop System
+  shopState: ShopState;
   
   // Daily Challenge
   activeChallenge?: DailyChallenge;

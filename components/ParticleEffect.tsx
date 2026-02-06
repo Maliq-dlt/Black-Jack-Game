@@ -201,7 +201,7 @@ export const ResultBanner: React.FC<ResultBannerProps> = ({ result, amount }) =>
           <motion.p 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`text-2xl text-center mt-2 font-mono ${amount > 0 ? 'text-green-200' : 'text-red-200'}`}
+            className={`text-3xl text-center mt-4 font-['Special_Elite'] font-black ${amount > 0 ? 'text-[#2d4a22]' : 'text-[#8b0000]'}`}
           >
             {amount > 0 ? '+' : ''}{amount.toFixed(2)}
           </motion.p>

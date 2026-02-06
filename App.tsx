@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { LayoutGroup, motion, AnimatePresence } from 'framer-motion';
-import { GamePhase, GameState, Hand, Card, GameResult, Rank, Suit, ChipData, TableTheme, GameSettings, PowerUp, Artifact, PowerUpType, ArtifactType, WildCardType, BossTrait, MetaProgression, PrestigeUpgrades, EventCardType, LifetimeStats, Achievement, AchievementType } from './types';
+import { GamePhase, GameState, Hand, Card, GameResult, Rank, Suit, ChipData, TableTheme, GameSettings, PowerUp, Artifact, PowerUpType, ArtifactType, WildCardType, BossTrait, MetaProgression, PrestigeUpgrades, EventCardType, LifetimeStats, Achievement, AchievementType, ShopItem, ShopState } from './types';
 import { INITIAL_BANKROLL, BLACKJACK_PAYOUT, DEALER_STAND_ON, ANIMATION_DELAY } from './constants';
 import { createDeck, shuffleDeck, calculateScore, createHand } from './services/gameLogic';
+import { detectCombos } from './comboDetector';
 import { getDealerCommentary } from './services/geminiService';
 import CardComponent from './components/CardComponent';
 import Chip from './components/Chip';
@@ -11,15 +12,28 @@ import BossRewardOverlay from './components/BossRewardOverlay';
 import RunSummary from './components/RunSummary';
 import DeckViewer from './components/DeckViewer';
 import { LandingScreen, SettingsModal } from './components/LandingScreen';
-import { RoguelikeShop } from './components/RoguelikeShop';
+import { EnhancedShop } from './components/EnhancedShop';
 import { SoundEngine } from './services/SoundEngine';
 import { THEME_COLORS } from './constants';
 import StatsScreen from './components/StatsScreen';
 import AchievementPopup, { ACHIEVEMENTS, createAchievement } from './components/AchievementPopup';
-import { BossBattleUI } from './components/BossBattleUI';
+import { BossBattlePhases, BossAbility, BossPhase } from './components/BossBattlePhases';
+import { FlashType } from './components/FlashOverlay';
+import { ParticleType } from './components/ParticleSystem';
 import { BOSS_DATA, getBossForStage, isBossStage, getBossDialogue } from './bossData';
 import { SkillTreeScreen } from './components/SkillTreeScreen';
 import { SpecializationPath } from './types';
+
+// GamePlay Upgrade Components
+import { GameContainer } from './components/ShakeContainer';
+import { FlashOverlay } from './components/FlashOverlay';
+import { ParticleSystem } from './components/ParticleSystem';
+import { NumberCounter } from './components/NumberCounter';
+import { AchievementQueue } from './components/AchievementNotification';
+import { ComboPopup } from './components/ComboChainDisplay';
+import { Tooltip } from './components/Tooltip';
+import { useGameJuiceContext } from './context/GameJuiceContext';
+import { useComboContext } from './context/ComboContext';
 
 // Icons
 const RefreshIcon = () => <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>;
@@ -124,6 +138,14 @@ const App: React.FC = () => {
       consecutiveWins: 0,
       difficultyModifier: 1.0,
       isHot: false
+    },
+    shopState: {
+      items: [],
+      rerollCost: 100,
+      rerollCount: 0,
+      interestRate: 0.05,
+      maxInterest: 250,
+      lastRestock: Date.now()
     }
   });
 
@@ -250,13 +272,26 @@ const App: React.FC = () => {
     }
   };
 
+  const returnChip = (chip: ChipData) => {
+    setGameState(prev => ({
+      ...prev,
+      bankroll: prev.bankroll + chip.value,
+      currentBet: prev.currentBet - chip.value,
+      currentBetChips: prev.currentBetChips.filter(c => c.id !== chip.id)
+    }));
+    soundEngine.playChipClick();
+  };
+
   const clearBet = () => {
+    if (gameState.currentBet === 0) return;
+    
     setGameState(prev => ({
       ...prev,
       bankroll: prev.bankroll + prev.currentBet,
       currentBet: 0,
-      currentBetChips: [] // This triggers exit animation
+      currentBetChips: []
     }));
+    soundEngine.playChipClick();
   };
 
   const dealGame = () => {
@@ -402,8 +437,10 @@ const App: React.FC = () => {
     applyCardEffect(card, gameState.activeHandIndex);
 
     if (updatedHand.isBusted) {
+      juice.bust();
       handleHandEnd();
     } else if (updatedHand.score === 21) {
+        juice.blackjack();
         stand(); 
     }
   };
@@ -602,8 +639,12 @@ const App: React.FC = () => {
       const dealerBusted = dealerScore > 21;
       const dealerBJ = gameState.dealerHand.isBlackjack && gameState.dealerHand.cards.length === 2;
 
-      if (dealerBJ && gameState.insuranceBet > 0) {
-          totalWinnings += gameState.insuranceBet * 3;
+      if (dealerBJ) {
+          juice.loss(true);
+          if (gameState.insuranceBet > 0) {
+              totalWinnings += gameState.insuranceBet * 3;
+              juice.win(false);
+          }
       }
 
       const hands = gameState.playerHands.map(hand => {
@@ -668,12 +709,43 @@ const App: React.FC = () => {
               }
           }
           totalWinnings += winAmount;
+
+          // --- Combo Detection ---
+          if (result !== GameResult.Loss && result !== GameResult.Bust) {
+              const suitCounts: Record<string, number> = {};
+              hand.cards.forEach(c => {
+                  suitCounts[c.suit] = (suitCounts[c.suit] || 0) + 1;
+              });
+
+              const counts: Record<string, number> = {};
+              hand.cards.forEach(c => {
+                  counts[c.rank] = (counts[c.rank] || 0) + 1;
+              });
+              const freq = Object.values(counts);
+
+              combo.checkHandCombos({
+                  hasPair: freq.includes(2),
+                  hasTwoPair: freq.filter(c => c === 2).length >= 2,
+                  hasThreeKind: freq.includes(3),
+                  hasFourKind: freq.includes(4),
+                  hasFullHouse: freq.includes(3) && freq.includes(2),
+                  hasBlackjack: hand.isBlackjack,
+                  suitCount: suitCounts
+              });
+          }
+
           return { result, winAmount };
       });
 
       // Progression and Economy Tracking
       const netProfit = totalWinnings - (gameState.currentBet + gameState.insuranceBet);
       const isOverallWin = netProfit > 0;
+
+      if (isOverallWin) {
+          juice.win(netProfit > 500);
+      } else if (netProfit < 0) {
+          juice.loss(Math.abs(netProfit) > 500);
+      }
 
       setGameState(prev => ({
           ...prev,
@@ -764,7 +836,7 @@ const App: React.FC = () => {
       
       if (primaryResult === GameResult.Blackjack) {
           setResultBanner('BLACKJACK');
-          setShowConfetti(true);
+          setGlobalParticles({ trigger: true, type: 'confetti' });
           setTotalWins(prev => prev + 1);
           soundEngine.playBlackjack();
       } else if (primaryResult === GameResult.Win || primaryResult === GameResult.DealerBust) {
@@ -772,7 +844,7 @@ const App: React.FC = () => {
           setTotalWins(prev => prev + 1);
           soundEngine.playWin();
           if (netWin >= 500) {
-              setShowCoins(true);
+              setGlobalParticles({ trigger: true, type: 'coins' });
           }
       } else if (primaryResult === GameResult.Bust) {
           setResultBanner('BUST');
@@ -787,11 +859,28 @@ const App: React.FC = () => {
       // Clear banner after delay
       setTimeout(() => setResultBanner(null), 2500);
 
-      setGameState(prev => ({
-          ...prev,
-          bankroll: prev.bankroll + totalWinnings,
-          phase: GamePhase.GameOver
-      }));
+      setGameState(prev => {
+          const newState = {
+              ...prev,
+              bankroll: prev.bankroll + totalWinnings,
+              phase: GamePhase.GameOver
+          };
+
+          // Damage Boss Logic
+          if (prev.isBossRound && prev.currentBossId && netWin > 0) {
+              const boss = BOSS_DATA.find(b => b.id === prev.currentBossId);
+              if (boss) {
+                  // Damage boss based on netWin
+                  boss.currentHealth = Math.max(0, boss.currentHealth - netWin);
+                  if (boss.currentHealth === 0) {
+                      newState.dealerMessage = `DEFEATED: ${boss.name} HAS BEEN VANQUISHED!`;
+                      // The BossBattlePhases component will also trigger onBossDefeated
+                  }
+              }
+          }
+
+          return newState;
+      });
       
       const comment = await getDealerCommentary(
           gameState.settings.apiKey,
@@ -872,11 +961,29 @@ const App: React.FC = () => {
           playerHands: [createHand()],
           activeHandIndex: 0,
           currentBet: 0,
+          currentBetChips: [],
           phase: GamePhase.Betting,
           insuranceBet: 0,
           insuranceAvailable: false,
           dealerMessage: "Place your bets."
       }));
+  };
+
+  const goToMenu = () => {
+      setGameState(prev => ({
+          ...prev,
+          isGameStarted: false,
+          dealerHand: createHand(),
+          playerHands: [createHand()],
+          activeHandIndex: 0,
+          currentBet: 0,
+          currentBetChips: [],
+          phase: GamePhase.Betting,
+          insuranceBet: 0,
+          insuranceAvailable: false,
+          dealerMessage: "Welcome back. Place your bets."
+      }));
+      setResultBanner(null);
   };
 
   // --- UI Renders ---
@@ -961,16 +1068,17 @@ const App: React.FC = () => {
   };
 
   const handleRefillTokens = () => {
-    setGameState(prev => ({
-      ...prev,
-      bankroll: prev.bankroll + 1000,
-      totalRefills: prev.totalRefills + 1,
-      dealerMessage: "DEPOSIT CONFIRMED: $1000 ADDED TO YOUR ACCOUNT."
-    }));
-    setIsRunSummaryOpen(false); // Close summary if they refill
-    setShowCoins(true);
-    soundEngine.playWin();
+    if (gameState.bankroll >= 1000) {
+      setGameState(prev => ({
+        ...prev,
+        bankroll: prev.bankroll - 1000,
+        totalRefills: prev.totalRefills + 1,
+        dealerMessage: "ANOTHER SHAKE OF THE DICE. TOKENS REPLENISHED."
+      }));
+      soundEngine.playChipClick();
+    }
   };
+
 
   const usePowerUp = (item: PowerUp) => {
     if (item.type === PowerUpType.Peek) {
@@ -1030,13 +1138,166 @@ const App: React.FC = () => {
   const hasApiKey = !!gameState.settings.apiKey;
 
   const currentTheme = THEME_COLORS[gameState.settings.theme];
+  
+  const juice = useGameJuiceContext();
+  const combo = useComboContext();
+  
+  // Register container for juice effects
+  const containerRef = React.useRef(null);
+  useEffect(() => {
+    juice.registerContainer(containerRef);
+  }, [juice]);
+
+  // --- Enhanced Shop Handlers ---
+  const handleBuyShopItem = useCallback((item: ShopItem) => {
+    // Determine which handler to use based on original item type
+    // This is a bridge between the new generic item and old specific handlers
+    const powerUps = ['peek_1', 'transmute_1', 'shield_1'];
+    const artifactsIds = ['golden_touch', 'lucky_coin', 'chip_magnet', 'lucky_seven', 'ace_in_hole', 'combo_starter', 'vampiric_gamble', 'ghost_hand', 'high_roller_badge', 'phoenix_feather', 'shadow_cloak', 'blood_pact', 'demon_dice'];
+
+    if (powerUps.includes(item.id)) {
+      const pType = item.id === 'peek_1' ? PowerUpType.Peek : (item.id === 'transmute_1' ? PowerUpType.Transmute : PowerUpType.Shield);
+      handleBuyPowerUp({ id: item.id, type: pType, name: item.name, description: item.description, cost: item.cost });
+    } else if (artifactsIds.includes(item.id)) {
+      // Find original artifact for more details if needed
+      handleBuyArtifact({ id: item.id, name: item.name, description: item.description, cost: item.cost, type: item.id.toUpperCase() as any, tier: item.rarity.toUpperCase() as any });
+    } else if (item.id.startsWith('purge-')) {
+        const rank = item.id.replace('purge-', '');
+        handleRemoveCard(rank);
+    }
+  }, [handleBuyPowerUp, handleBuyArtifact, handleRemoveCard]);
+  const handleBossHealthChange = useCallback((health: number) => {
+    setGameState(prev => {
+        if (!prev.currentBossId) return prev;
+        const boss = BOSS_DATA.find(b => b.id === prev.currentBossId);
+        if (!boss) return prev;
+        return {
+            ...prev,
+            // Logic to update health in our central data if we had a list, 
+            // but for now we'll just track it in the active boss instance if needed.
+            // Since BOSS_DATA is static, we might need to track current boss health in GameState.
+        };
+    });
+  }, []);
+
+  const handleBossPhaseChange = useCallback((phase: BossPhase) => {
+      juice.flash('warning');
+      juice.shake(2);
+      soundEngine.playWin(); // Or a specific boss phase sound
+  }, [juice]);
+
+  const handleBossAbilityTrigger = useCallback((ability: BossAbility) => {
+      juice.flash('error');
+      juice.shake(3);
+      setGameState(prev => ({ ...prev, dealerMessage: `BOSS ABILITY: ${ability.name}! ${ability.description}` }));
+  }, [juice]);
+
+  const [globalFlash, setGlobalFlash] = useState<{ active: boolean; type: FlashType; color?: string }>({ active: false, type: 'white' });
+  const [globalParticles, setGlobalParticles] = useState<{ trigger: boolean; type: ParticleType; origin?: { x: number; y: number } }>({ trigger: false, type: 'sparkle' });
+
+  useEffect(() => {
+    return juice.registerFlashCallback((type, color) => {
+      setGlobalFlash({ active: true, type, color });
+    });
+  }, [juice]);
+
+  const handleBossDefeated = useCallback(() => {
+      juice.winCelebration();
+      setGameState(prev => ({
+          ...prev,
+          isBossRound: false,
+          currentBossId: null,
+          dealerMessage: "THE BOSS HAS FALLEN. YOU ARE VICTORIOUS!"
+      }));
+      setGlobalParticles({ trigger: true, type: 'fireworks' });
+  }, [juice]);
+
+  const handleRerollShop = useCallback(() => {
+     setGameState(prev => {
+         const newRerollCost = Math.floor(prev.shopState.rerollCost * 1.5);
+         // In a real app we would generate new items here
+         return {
+             ...prev,
+             bankroll: prev.bankroll - prev.shopState.rerollCost,
+             shopState: {
+                 ...prev.shopState,
+                 rerollCost: newRerollCost,
+                 rerollCount: prev.shopState.rerollCount + 1,
+                 // Reset items to a new random set (simulated)
+                 items: (prev.shopState.items || []).sort(() => Math.random() - 0.5)
+             }
+         };
+     });
+     juice.shake(1.5);
+     soundEngine.playChipClick();
+  }, [juice]);
+
+  const updateShopState = useCallback((state: Partial<ShopState>) => {
+      setGameState(prev => ({
+          ...prev,
+          shopState: { ...prev.shopState, ...state }
+      }));
+  }, []);
+
+  const handleOpenShop = useCallback(() => {
+    setGameState(prev => {
+        // Generate new items if shop is empty or needs restock
+        const needsRestock = prev.shopState.items.length === 0;
+        if (needsRestock) {
+            // Transform original items to new ShopItem format
+            const consumables = [
+                { id: 'peek_1', name: 'Oracle Eye', description: "Reveal dealer's hidden card.", cost: 150, type: 'consumable' as const, rarity: 'common' as const, icon: '👁️' },
+                { id: 'transmute_1', name: 'Transmute', description: "Reroll last card.", cost: 250, type: 'consumable' as const, rarity: 'common' as const, icon: '🔄' },
+                { id: 'shield_1', name: 'Bust Shield', description: "Prevents loss on bust.", cost: 400, type: 'consumable' as const, rarity: 'common' as const, icon: '🛡️' }
+            ];
+            
+            const artifacts = [
+                { id: 'golden_touch', name: 'Golden Touch', description: '+5% win bonus.', cost: 500, type: 'voucher' as const, rarity: 'common' as const, icon: '💰' },
+                { id: 'lucky_coin', name: 'Lucky Coin', description: '+2% wild card chance.', cost: 400, type: 'voucher' as const, rarity: 'common' as const, icon: '🍀' },
+                { id: 'chip_magnet', name: 'Chip Magnet', description: '+$10 per win.', cost: 350, type: 'voucher' as const, rarity: 'common' as const, icon: '🧲' }
+            ].sort(() => Math.random() - 0.5).slice(0, 2);
+
+            const purges = ['2', '3', '4', '5'].map(rank => ({
+                id: `purge-${rank}`,
+                name: `Purge ${rank}`,
+                description: `Remove all ${rank}s from deck.`,
+                cost: 500,
+                type: 'service' as const,
+                rarity: 'rare' as const,
+                icon: '🔥',
+                isLocked: prev.removedRanks.includes(rank)
+            }));
+
+            return {
+                ...prev,
+                isShopOpen: true,
+                shopState: {
+                    ...prev.shopState,
+                    items: [...consumables, ...artifacts, ...purges]
+                }
+            };
+        }
+        return { ...prev, isShopOpen: true };
+    });
+  }, []);
 
   return (
-    <div 
-      className="h-screen w-full text-white flex flex-col overflow-hidden transition-all duration-700 font-serif relative"
-      style={{ background: currentTheme.bg }}
-    >
-      <div className="gritty-noise" />
+    <GameContainer ref={containerRef} className="h-screen w-full">
+      <div 
+        className="h-full w-full text-[#e8dcc8] flex flex-col overflow-hidden transition-all duration-700 font-serif relative"
+        style={{ background: currentTheme.bg }}
+      >
+        {/* Global FX Overlays */}
+        <FlashOverlay />
+        <ParticleSystem type="confetti" trigger={false} /> {/* Placeholder for global trigger control if needed */}
+        
+        {/* Global Notifications */}
+        {combo.recentCombo && <ComboPopup combo={combo.recentCombo} />}
+        
+        {/* Wood texture overlay */}
+      <div className="wood-texture" />
+      {/* Candlelight vignette */}
+      <div className="candle-vignette" />
       <AnimatePresence>
         {!gameState.isGameStarted && (
           <LandingScreen 
@@ -1055,15 +1316,14 @@ const App: React.FC = () => {
         onUpdateSettings={handleUpdateSettings}
       />
 
-      <RoguelikeShop
-        isOpen={isShopOpen}
-        onClose={() => setIsShopOpen(false)}
+      <EnhancedShop
+        isOpen={gameState.isShopOpen}
+        onClose={() => setGameState(prev => ({ ...prev, isShopOpen: false }))}
         bankroll={gameState.bankroll}
-        onBuyPowerUp={handleBuyPowerUp}
-        onBuyArtifact={handleBuyArtifact}
-        onRemoveCard={handleRemoveCard}
-        ownedArtifacts={gameState.artifacts}
-        removedRanks={gameState.removedRanks}
+        shopState={gameState.shopState}
+        onBuyItem={handleBuyShopItem}
+        onReroll={handleRerollShop}
+        onUpdateShopState={updateShopState}
       />
 
       <BossRewardOverlay 
@@ -1107,24 +1367,58 @@ const App: React.FC = () => {
       />
       
       {/* Particle Effects */}
-      <ParticleEffect type="confetti" trigger={showConfetti} onComplete={() => setShowConfetti(false)} />
-      <ParticleEffect type="coins" trigger={showCoins} onComplete={() => setShowCoins(false)} />
+      <ParticleSystem 
+        type={globalParticles.type} 
+        trigger={globalParticles.trigger} 
+        origin={globalParticles.origin}
+        onComplete={() => setGlobalParticles(prev => ({ ...prev, trigger: false }))} 
+      />
+      <FlashOverlay 
+        isActive={globalFlash.active} 
+        type={globalFlash.type} 
+        customColor={globalFlash.color}
+        onComplete={() => setGlobalFlash(prev => ({ ...prev, active: false }))} 
+      />
+      
+      {/* Notifications and Overlays */}
+      <AchievementQueue achievements={[]} />
+      <ComboPopup combo={combo.recentCombo} />
       
       {/* Result Banner */}
       <ResultBanner result={resultBanner} amount={lastWinAmount} />
       
       {/* Boss Battle UI */}
-      <BossBattleUI
-        boss={gameState.currentBossId ? BOSS_DATA.find(b => b.id === gameState.currentBossId) || null : null}
-        isActive={gameState.isBossRound}
-        currentDialogue={gameState.dealerMessage}
-        heatLevel={gameState.heatMeter.level}
-      />
+      {gameState.isBossRound && gameState.currentBossId && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] w-full max-w-2xl px-4">
+          <BossBattlePhases
+            boss={BOSS_DATA.find(b => b.id === gameState.currentBossId)!}
+            onHealthChange={handleBossHealthChange}
+            onPhaseChange={handleBossPhaseChange}
+            onAbilityTrigger={handleBossAbilityTrigger}
+            onBossDefeated={handleBossDefeated}
+          />
+        </div>
+      )}
       
-      {/* Header / Info Bar */}
-      <div className="w-full bg-black/60 backdrop-blur-md p-3 px-6 flex justify-between items-center z-10 border-b-2 border-[#1a1a1a]">
-        <div className="flex items-center gap-4">
-          <h1 className="font-['Special_Elite'] text-2xl tracking-[0.3em] text-[#e2d1b0] font-black uppercase" style={{ textShadow: '2px 2px 0px #000' }}>ROYALE ROGUE</h1>
+      {/* Header / Info Bar - Dark Wood Panel */}
+      <div 
+        className="w-full p-3 px-6 flex justify-between items-center z-10 relative"
+        style={{
+          background: 'linear-gradient(180deg, #1a1410 0%, #0f0c08 100%)',
+          borderBottom: '3px solid #3d2e24',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.8), inset 0 1px 0 rgba(212,162,76,0.1)'
+        }}
+      >
+        {/* Wood grain texture on header */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]" />
+        
+        <div className="flex items-center gap-4 relative z-10">
+          <h1 
+            className="font-['Cinzel'] text-2xl tracking-[0.2em] text-[#d4a24c] font-black uppercase"
+            style={{ textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 20px rgba(212,162,76,0.3)' }}
+          >
+            ROYALE ROGUE
+          </h1>
           {/* Artifacts Display */}
           <div className="flex gap-1">
             {gameState.artifacts.map(art => (
@@ -1151,7 +1445,7 @@ const App: React.FC = () => {
           <div className="flex flex-col items-end opacity-80">
             <span className="text-[#8b0000]/60 text-[10px] font-bold tracking-widest uppercase mb-0.5">Gold Ledger</span>
             <div className="flex items-center gap-2">
-                <AnimatedCounter value={gameState.bankroll} className="text-xl font-black" />
+                <NumberCounter value={gameState.bankroll} className="text-xl font-black" />
                 {gameState.bankroll < 5 && (
                     <motion.span 
                       animate={{ opacity: [1, 0, 1] }}
@@ -1166,7 +1460,7 @@ const App: React.FC = () => {
           
           <div className="flex flex-col items-end opacity-80 border-l border-[#1a1a1a] pl-6">
             <span className="text-[#8b0000]/60 text-[10px] font-bold tracking-widest uppercase mb-0.5">Sins Total</span>
-            <span className="text-xl font-black">${Math.floor(gameState.lifetimeEarnings).toLocaleString()}</span>
+            <NumberCounter value={Math.floor(gameState.lifetimeEarnings)} className="text-xl font-black" />
           </div>
 
           <div className="flex flex-col items-end opacity-80 border-l border-[#1a1a1a] ml-6 pl-4">
@@ -1190,7 +1484,7 @@ const App: React.FC = () => {
             
             {/* Black Market Button (Yellow) */}
             <button 
-                onClick={() => setIsShopOpen(true)}
+                onClick={handleOpenShop}
                 className="w-10 h-10 rounded-full bg-yellow-500/10 border-2 border-yellow-500/40 hover:border-yellow-400 hover:bg-yellow-500/20 transition-all flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.3)] group"
                 title="Black Market"
             >
@@ -1281,13 +1575,14 @@ const App: React.FC = () => {
                                     scale: 0.5,
                                     transition: { duration: 0.6, ease: "easeIn" } 
                                 }}
+                                whileHover={{ scale: 1.1, cursor: 'pointer', zIndex: 100 }}
                                 style={{ 
                                     zIndex: index, 
-                                    position: 'absolute', 
-                                    pointerEvents: 'none' 
+                                    position: 'absolute',
+                                    pointerEvents: 'auto'
                                 }}
                             >
-                                <Chip color={chip.color} value={chip.value} onClick={() => {}} />
+                                <Chip color={chip.color} value={chip.value} onClick={() => returnChip(chip)} />
                             </motion.div>
                         ))}
                     </AnimatePresence>
@@ -1400,67 +1695,111 @@ const App: React.FC = () => {
               
               {/* Betting Controls */}
               {gameState.phase === GamePhase.Betting && (
-                  <div className="flex flex-col items-center gap-4 animate-fade-in-up">
-                      <div className="flex gap-3 flex-wrap justify-center scale-90">
+                  <div className="flex flex-col items-center gap-8 animate-fade-in-up mt-auto mb-12">
+                      <div className="flex gap-4 flex-wrap justify-center scale-110 mb-4">
                           <Chip color="red" value={5} onClick={() => placeBet(5)} disabled={gameState.bankroll < 5} />
                           <Chip color="green" value={25} onClick={() => placeBet(25)} disabled={gameState.bankroll < 25} />
                           <Chip color="black" value={100} onClick={() => placeBet(100)} disabled={gameState.bankroll < 100} />
                           <Chip color="purple" value={500} onClick={() => placeBet(500)} disabled={gameState.bankroll < 500} />
                       </div>
-                       <div className="flex gap-6">
+
+                      <div className="flex flex-col items-center gap-6 w-full max-w-xs">
+                          <motion.button 
+                            whileHover={gameState.currentBet > 0 ? { scale: 1.05, boxShadow: '0 0 30px rgba(139, 0, 0, 0.4)' } : {}}
+                            whileTap={gameState.currentBet > 0 ? { scale: 0.95 } : {}}
+                            onClick={dealGame}
+                            disabled={gameState.currentBet === 0}
+                            className={`w-full py-5 font-['Special_Elite'] font-bold text-3xl border-4 transition-all uppercase tracking-[0.4em] relative overflow-hidden
+                              ${gameState.currentBet > 0 
+                                ? 'bg-[#3a0a0a] border-[#8b0000] text-[#8b0000] shadow-[0_0_20px_rgba(139,0,0,0.2)]' 
+                                : 'bg-black/20 border-white/5 text-white/10 opacity-50'}`}
+                            style={{ clipPath: 'polygon(0% 2%, 100% 0%, 99.5% 98%, 0.5% 100%)' }}
+                          >
+                            <span className="relative z-10">OFFER</span>
+                            {gameState.currentBet > 0 && (
+                              <motion.div 
+                                className="absolute inset-0 bg-[#8b0000]/10"
+                                animate={{ opacity: [0.1, 0.3, 0.1] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                              />
+                            )}
+                          </motion.button>
+
                           <button 
                             onClick={clearBet}
                             disabled={gameState.currentBet === 0}
-                            className="px-6 py-3 font-['Special_Elite'] font-bold text-sm border-2 border-[#1a1a1a] text-[#1a1a1a]/60 hover:text-[#1a1a1a] hover:bg-black/5 disabled:opacity-20 transition-all uppercase tracking-widest"
+                            className="group flex items-center gap-2 px-8 py-3 font-['Special_Elite'] font-bold text-lg bg-[#d1c7a7] text-[#8b0000] border-2 border-[#1a1a1a] hover:bg-[#c4b998] disabled:opacity-0 disabled:pointer-events-none transition-all uppercase tracking-widest shadow-xl"
                             style={{ clipPath: 'polygon(2% 10%, 95% 2%, 98% 90%, 5% 95%)' }}
                           >
-                            VOID
-                          </button>
-                          <button 
-                            onClick={dealGame}
-                            disabled={gameState.currentBet === 0}
-                            className="px-10 py-3 font-['Special_Elite'] font-bold text-xl border-4 border-[#3a0a0a] text-[#8b0000] hover:bg-[#3a0a0a]/10 disabled:opacity-20 transition-all transform hover:scale-105 active:scale-95 uppercase tracking-[0.3em]"
-                            style={{ clipPath: 'polygon(0% 2%, 100% 0%, 99.5% 98%, 0.5% 100%)' }}
-                          >
-                             OFFER
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            VOID BET
                           </button>
                       </div>
                   </div>
               )}
 
-              {/* Action Controls */}
+              {/* Action Controls - Carved Wood Buttons */}
               {gameState.phase === GamePhase.PlayerTurn && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-2xl mx-auto">
                       <button 
                         onClick={hit}
-                        className="bg-[#1a231a] hover:bg-[#2e3a2e] text-[#e2d1b0] font-['Special_Elite'] font-bold py-4 border-2 border-[#1a1a1a] shadow-2xl transition-all uppercase text-xl shadow-[0_10px_30px_rgba(0,0,0,0.6)]"
-                        style={{ clipPath: 'polygon(1% 2%, 99% 0%, 100% 5%, 98% 97%, 97% 100%, 3% 98%, 0% 95%, 2% 3%)' }}
+                        className="relative overflow-hidden font-['Cinzel'] font-bold py-4 uppercase text-xl transition-all duration-200 hover:scale-105 active:scale-95"
+                        style={{ 
+                          background: 'linear-gradient(145deg, #2a3d2a 0%, #1a2a1a 100%)',
+                          border: '3px solid #3d5a3d',
+                          color: '#8fbc8f',
+                          boxShadow: '0 6px 20px rgba(0,0,0,0.7), inset 0 1px 0 rgba(143,188,143,0.2)',
+                          clipPath: 'polygon(2% 0%, 98% 2%, 100% 8%, 98% 98%, 95% 100%, 5% 97%, 0% 92%, 2% 5%)'
+                        }}
                       >
                          BETRAY
+                         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]" />
                       </button>
                       
                       <button 
                         onClick={stand}
-                        className="bg-[#3a0a0a] hover:bg-[#5a0f0f] text-[#e2d1b0] font-['Special_Elite'] font-bold py-4 border-2 border-[#1a1a1a] shadow-2xl transition-all uppercase text-xl shadow-[0_10px_30px_rgba(0,0,0,0.6)]"
-                        style={{ clipPath: 'polygon(2% 1%, 98% 3%, 100% 10%, 99% 95%, 95% 100%, 5% 98%, 1% 92%, 3% 5%)' }}
+                        className="relative overflow-hidden font-['Cinzel'] font-bold py-4 uppercase text-xl transition-all duration-200 hover:scale-105 active:scale-95"
+                        style={{ 
+                          background: 'linear-gradient(145deg, #3d2424 0%, #2a1a1a 100%)',
+                          border: '3px solid #8b1a1a',
+                          color: '#ff6b35',
+                          boxShadow: '0 6px 20px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,107,53,0.2)',
+                          clipPath: 'polygon(2% 2%, 98% 0%, 100% 10%, 98% 95%, 95% 100%, 5% 98%, 0% 92%, 2% 8%)'
+                        }}
                       >
                          ACCEPT
+                         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]" />
                       </button>
 
                       <button 
                         onClick={doubleDown}
                         disabled={!canDouble}
-                        className="bg-[#1a1a1a] hover:bg-black text-[#e2d1b0] font-['Special_Elite'] font-bold py-4 border-2 border-[#8b0000]/40 shadow-2xl transition-all uppercase text-xl disabled:opacity-30 shadow-[0_10px_30px_rgba(0,0,0,0.6)]"
-                        style={{ clipPath: 'polygon(1% 4%, 99% 1%, 100% 8%, 98% 99%, 96% 100%, 2% 97%, 0% 92%, 1% 5%)' }}
+                        className="relative overflow-hidden font-['Cinzel'] font-bold py-4 uppercase text-xl transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100"
+                        style={{ 
+                          background: 'linear-gradient(145deg, #2a1f18 0%, #1a1410 100%)',
+                          border: '3px solid #d4a24c',
+                          color: '#d4a24c',
+                          boxShadow: '0 6px 20px rgba(0,0,0,0.7), inset 0 1px 0 rgba(212,162,76,0.2)',
+                          clipPath: 'polygon(2% 3%, 98% 0%, 100% 8%, 98% 97%, 95% 100%, 5% 97%, 0% 90%, 2% 6%)'
+                        }}
                       >
                          SACRIFICE
+                         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]" />
                       </button>
 
                       <button 
                         onClick={split}
                         disabled={!canSplit}
-                        className="bg-[#1a1a1a] hover:bg-black text-[#e2d1b0] font-['Special_Elite'] font-bold py-4 border-2 border-white/10 shadow-2xl transition-all uppercase text-xl disabled:opacity-30 shadow-[0_10px_30px_rgba(0,0,0,0.6)]"
-                        style={{ clipPath: 'polygon(3% 1%, 97% 2%, 100% 12%, 99% 98%, 97% 100%, 4% 97%, 1% 94%, 2% 4%)' }}
+                        className="relative overflow-hidden font-['Cinzel'] font-bold py-4 uppercase text-xl transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100"
+                        style={{ 
+                          background: 'linear-gradient(145deg, #1a1410 0%, #0a0806 100%)',
+                          border: '3px solid #a89878',
+                          color: '#a89878',
+                          boxShadow: '0 6px 20px rgba(0,0,0,0.7), inset 0 1px 0 rgba(168,152,120,0.1)',
+                          clipPath: 'polygon(3% 0%, 97% 2%, 100% 12%, 98% 98%, 95% 100%, 5% 97%, 0% 94%, 2% 5%)'
+                        }}
                       >
                          SPLIT
                       </button>
@@ -1469,13 +1808,19 @@ const App: React.FC = () => {
 
               {/* Game Over Controls */}
               {gameState.phase === GamePhase.GameOver && (
-                  <div className="flex justify-center">
+                  <div className="flex flex-col items-center gap-4">
                       <button 
                         onClick={resetGame}
                         className="bg-transparent border-2 border-[#e2d1b0] text-[#e2d1b0] font-['Special_Elite'] font-black text-2xl px-16 py-5 shadow-2xl hover:bg-white/5 transition-all animate-pulse uppercase tracking-[0.3em]"
                         style={{ clipPath: 'polygon(0% 2%, 100% 0%, 99.5% 98%, 0.5% 100%)' }}
                       >
                          RESURRECT
+                      </button>
+                      <button 
+                        onClick={goToMenu}
+                        className="bg-transparent border border-[#e2d1b0]/50 text-[#e2d1b0]/70 font-['Special_Elite'] text-sm px-8 py-2 hover:bg-white/5 hover:text-[#e2d1b0] transition-all uppercase tracking-widest"
+                      >
+                         ← RETURN TO MENU
                       </button>
                   </div>
               )}
@@ -1487,7 +1832,8 @@ const App: React.FC = () => {
               API KEY MISSING - AI COMMENTARY DISABLED
           </div>
       )}
-    </div>
+      </div>
+    </GameContainer>
   );
 };
 
