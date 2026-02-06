@@ -16,6 +16,10 @@ import { SoundEngine } from './services/SoundEngine';
 import { THEME_COLORS } from './constants';
 import StatsScreen from './components/StatsScreen';
 import AchievementPopup, { ACHIEVEMENTS, createAchievement } from './components/AchievementPopup';
+import { BossBattleUI } from './components/BossBattleUI';
+import { BOSS_DATA, getBossForStage, isBossStage, getBossDialogue } from './bossData';
+import { SkillTreeScreen } from './components/SkillTreeScreen';
+import { SpecializationPath } from './types';
 
 // Icons
 const RefreshIcon = () => <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>;
@@ -26,9 +30,31 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('royale_blackjack_meta');
     if (saved) return JSON.parse(saved);
     return {
-      totalPrestigePoints: 0,
+      totalPrestigePoints: 10, // Start with 10 for testing
       spentPrestigePoints: 0,
-      upgrades: { extraStartingCash: 0, bonusInventorySlots: 0, increasedWildChance: 0 }
+      upgrades: { 
+        extraStartingCash: 0, 
+        bonusInventorySlots: 0, 
+        increasedWildChance: 0,
+        bossRewardMultiplier: 0,
+        criticalWinChance: 0,
+        bustProtectionChance: 0,
+        betMultiplierBonus: 0,
+        startingArtifactSlots: 0,
+        heatMeterReduction: 0
+      },
+      skillTree: {
+        unlockedSkills: [],
+        currentPath: SpecializationPath.None,
+        pathProgress: {
+          [SpecializationPath.DealerKiller]: 0,
+          [SpecializationPath.HighRoller]: 0,
+          [SpecializationPath.Survivor]: 0,
+          [SpecializationPath.None]: 0
+        }
+      },
+      totalRuns: 0,
+      highestStageEver: 0
     };
   };
 
@@ -79,17 +105,26 @@ const App: React.FC = () => {
     totalRefills: 0,
     isBossRound: false,
     activeBossTrait: null,
+    activeBossTraits: [],
+    currentBossId: null,
     rareArtifactChoices: null,
     meta: loadMeta(),
     removedRanks: [],
-    ascensionLevel: loadMeta().upgrades.extraStartingCash > 0 ? 1 : 0, // Start at 0, unlock after first win
-    highestStageReached: 0
+    ascensionLevel: loadMeta().upgrades.extraStartingCash > 0 ? 1 : 0,
+    highestStageReached: 0,
+    heatMeter: {
+      level: 0,
+      consecutiveWins: 0,
+      difficultyModifier: 1.0,
+      isHot: false
+    }
   });
 
   const [peakBankroll, setPeakBankroll] = useState(INITIAL_BANKROLL);
   const [isRunSummaryOpen, setIsRunSummaryOpen] = useState(false);
   const [isDeckViewerOpen, setIsDeckViewerOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const [isSkillTreeOpen, setIsSkillTreeOpen] = useState(false);
   const [lifetimeStats, setLifetimeStats] = useState<LifetimeStats>(loadStats);
   const [pendingAchievement, setPendingAchievement] = useState<Achievement | null>(null);
 
@@ -986,7 +1021,7 @@ const App: React.FC = () => {
 
   return (
     <div 
-      className="min-h-screen w-full text-white flex flex-col overflow-hidden transition-all duration-700 font-serif"
+      className="h-screen w-full text-white flex flex-col overflow-hidden transition-all duration-700 font-serif relative"
       style={{ background: currentTheme.bg }}
     >
       <div className="gritty-noise" />
@@ -1065,6 +1100,14 @@ const App: React.FC = () => {
       
       {/* Result Banner */}
       <ResultBanner result={resultBanner} amount={lastWinAmount} />
+      
+      {/* Boss Battle UI */}
+      <BossBattleUI
+        boss={gameState.currentBossId ? BOSS_DATA.find(b => b.id === gameState.currentBossId) || null : null}
+        isActive={gameState.isBossRound}
+        currentDialogue={gameState.dealerMessage}
+        heatLevel={gameState.heatMeter.level}
+      />
       
       {/* Header / Info Bar */}
       <div className="w-full bg-black/60 backdrop-blur-md p-3 px-6 flex justify-between items-center z-10 border-b-2 border-[#1a1a1a]">
@@ -1297,7 +1340,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Player Area */}
-        <div className="flex justify-center gap-8 w-full max-w-4xl px-4 overflow-visible pb-2 pt-6 min-h-[160px]">
+        <div className="flex justify-center gap-8 w-full max-w-4xl px-4 overflow-visible pb-4 pt-2 min-h-[140px]">
             <AnimatePresence>
             {gameState.playerHands.map((hand, handIndex) => (
                 <motion.div 
@@ -1350,7 +1393,7 @@ const App: React.FC = () => {
       </LayoutGroup>
 
       {/* Controls Footer */}
-      <div className="w-full bg-gradient-to-t from-black to-transparent p-4 pb-6 z-20">
+      <div className="w-full bg-gradient-to-t from-black to-transparent p-4 pb-12 z-20">
           <div className="max-w-3xl mx-auto">
               
               {/* Betting Controls */}

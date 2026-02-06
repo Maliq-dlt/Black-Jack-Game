@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PowerUp, Artifact, PowerUpType, ArtifactType } from '../types';
+import { PowerUp, Artifact, PowerUpType, ArtifactType, ArtifactTier, ArtifactSet } from '../types';
 
 interface RoguelikeShopProps {
   isOpen: boolean;
@@ -37,28 +37,75 @@ export const POWER_UPS: PowerUp[] = [
   }
 ];
 
+// Tier color mapping
+const TIER_COLORS: Record<ArtifactTier, { bg: string; border: string; text: string }> = {
+  [ArtifactTier.Common]: { bg: 'bg-gray-200/50', border: 'border-gray-400', text: 'text-gray-700' },
+  [ArtifactTier.Rare]: { bg: 'bg-blue-200/50', border: 'border-blue-500', text: 'text-blue-700' },
+  [ArtifactTier.Epic]: { bg: 'bg-purple-200/50', border: 'border-purple-500', text: 'text-purple-700' },
+  [ArtifactTier.Legendary]: { bg: 'bg-yellow-200/50', border: 'border-yellow-500', text: 'text-yellow-700' },
+  [ArtifactTier.Cursed]: { bg: 'bg-red-200/50', border: 'border-red-700', text: 'text-red-700' },
+};
+
 export const ARTIFACTS: Artifact[] = [
+  // === COMMON ===
   {
-    id: 'golden_touch',
-    type: ArtifactType.GoldenTouch,
-    name: 'Golden Touch',
-    description: "Permanent +10% winnings on all hands.",
-    cost: 1500
+    id: 'golden_touch', type: ArtifactType.GoldenTouch, tier: ArtifactTier.Common,
+    name: 'Golden Touch', description: '+5% winnings on all hands.', cost: 500
   },
   {
-    id: 'lucky_seven',
-    type: ArtifactType.LuckySeven,
-    name: 'Lucky Seven',
-    description: "Start each round with a 7 card.",
-    cost: 1200
+    id: 'lucky_coin', type: ArtifactType.LuckyCoin, tier: ArtifactTier.Common,
+    name: 'Lucky Coin', description: '+2% wild card chance.', cost: 400
   },
   {
-    id: 'cursed_gamble',
-    type: ArtifactType.VampiricGamble,
-    name: 'Cursed Gamble',
-    description: "+$200 on Pushes, but -10% bankroll on any Loss.",
-    cost: 800
-  }
+    id: 'chip_magnet', type: ArtifactType.ChipMagnet, tier: ArtifactTier.Common,
+    name: 'Chip Magnet', description: '+$10 per win.', cost: 350
+  },
+  // === RARE ===
+  {
+    id: 'lucky_seven', type: ArtifactType.LuckySeven, tier: ArtifactTier.Rare,
+    name: 'Lucky Seven', description: '7 in hand = +$77 bonus.', cost: 800, set: ArtifactSet.GamblerCollection
+  },
+  {
+    id: 'ace_in_hole', type: ArtifactType.AceInTheHole, tier: ArtifactTier.Rare,
+    name: 'Ace in the Hole', description: 'First Ace = peek dealer card.', cost: 900, set: ArtifactSet.GamblerCollection
+  },
+  {
+    id: 'combo_starter', type: ArtifactType.ComboStarter, tier: ArtifactTier.Rare,
+    name: 'Combo Starter', description: 'Win streak bonus starts at 2.', cost: 750
+  },
+  // === EPIC ===
+  {
+    id: 'vampiric_gamble', type: ArtifactType.VampiricGamble, tier: ArtifactTier.Epic,
+    name: 'Vampiric Gamble', description: 'Win = heal 10% of bet.', cost: 1200, set: ArtifactSet.BloodOath
+  },
+  {
+    id: 'ghost_hand', type: ArtifactType.GhostHand, tier: ArtifactTier.Epic,
+    name: 'Ghost Hand', description: '10% chance bust = push instead.', cost: 1500, set: ArtifactSet.ShadowPact
+  },
+  {
+    id: 'high_roller_badge', type: ArtifactType.HighRollerBadge, tier: ArtifactTier.Epic,
+    name: 'High Roller Badge', description: 'Bets $200+ = +25% payout.', cost: 1800, set: ArtifactSet.FortuneFavor
+  },
+  // === LEGENDARY ===
+  {
+    id: 'phoenix_feather', type: ArtifactType.PhoenixFeather, tier: ArtifactTier.Legendary,
+    name: 'Phoenix Feather', description: 'Revive once at 50% bankroll.', cost: 3000
+  },
+  {
+    id: 'shadow_cloak', type: ArtifactType.ShadowCloak, tier: ArtifactTier.Legendary,
+    name: 'Shadow Cloak', description: 'Boss traits reduced 50%.', cost: 2500, set: ArtifactSet.ShadowPact
+  },
+  // === CURSED ===
+  {
+    id: 'blood_pact', type: ArtifactType.BloodPact, tier: ArtifactTier.Cursed, isCursed: true,
+    name: 'Blood Pact', description: '+50% wins, but lose 10% on bust.', cost: 666, set: ArtifactSet.BloodOath,
+    drawback: 'Bust penalty increased by 10%'
+  },
+  {
+    id: 'demon_dice', type: ArtifactType.DemonDice, tier: ArtifactTier.Cursed, isCursed: true,
+    name: 'Demon Dice', description: 'Random: 3x payout OR lose bet.', cost: 999,
+    drawback: '50% chance to lose everything'
+  },
 ];
 
 export const RoguelikeShop: React.FC<RoguelikeShopProps> = ({ 
@@ -142,27 +189,48 @@ export const RoguelikeShop: React.FC<RoguelikeShopProps> = ({
                 <div className="space-y-3">
                   {ARTIFACTS.map((item) => {
                     const isOwned = ownedArtifacts.some(a => a.id === item.id);
+                    const tierStyle = TIER_COLORS[item.tier];
                     return (
                       <button
                         key={item.id}
                         disabled={bankroll < item.cost || isOwned}
                         onClick={() => onBuyArtifact(item)}
                         className={`
-                          w-full flex items-center justify-between p-4 transition-all border-2 group
+                          w-full flex items-center justify-between p-4 transition-all border-2 group relative overflow-hidden
                           ${isOwned 
                             ? 'bg-[#8b0000]/10 border-[#8b0000]/20 opacity-80' 
-                            : 'bg-black/5 border-[#1a1a1a]/10 hover:border-[#8b0000]/40 disabled:opacity-40'}
+                            : `${tierStyle.bg} ${tierStyle.border} hover:border-[#8b0000]/40 disabled:opacity-40`}
                         `}
                         style={{ clipPath: 'polygon(1% 1%, 98% 2%, 100% 1%, 99% 98%, 97% 100%, 2% 98%, 0% 99%, 1% 3%)' }}
                       >
-                        <div className="text-left">
-                          <div className={`font-bold text-sm transition-colors uppercase tracking-wide font-['Special_Elite'] ${isOwned ? 'text-[#8b0000]' : 'text-[#1a1a1a] group-hover:text-[#8b0000]'}`}>
-                            {item.name} {isOwned && '✓'}
+                        {/* Tier Badge */}
+                        <div className={`absolute top-0 right-0 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider ${tierStyle.bg} ${tierStyle.text} border-l border-b ${tierStyle.border}`}>
+                          {item.tier}
+                        </div>
+                        
+                        {/* Cursed Glow Effect */}
+                        {item.isCursed && (
+                          <div className="absolute inset-0 bg-gradient-to-r from-red-900/20 to-transparent animate-pulse pointer-events-none" />
+                        )}
+                        
+                        <div className="text-left flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`font-bold text-sm transition-colors uppercase tracking-wide font-['Special_Elite'] ${isOwned ? 'text-[#8b0000]' : `${tierStyle.text} group-hover:text-[#8b0000]`}`}>
+                              {item.isCursed && '💀 '}{item.name} {isOwned && '✓'}
+                            </span>
+                            {item.set && (
+                              <span className="text-[8px] px-1.5 py-0.5 bg-black/10 border border-black/20 uppercase tracking-wider font-bold text-black/40">
+                                {item.set.replace(/_/g, ' ')}
+                              </span>
+                            )}
                           </div>
                           <div className="text-[11px] text-[#1a1a1a]/60 line-clamp-1 italic font-serif">{item.description}</div>
+                          {item.drawback && (
+                            <div className="text-[9px] text-red-700/80 font-bold mt-0.5">⚠ {item.drawback}</div>
+                          )}
                         </div>
                         {!isOwned && (
-                          <div className="font-['Special_Elite'] font-bold text-[#8b0000] bg-[#8b0000]/5 px-3 py-1 border border-[#8b0000]/20 group-hover:scale-110 transition-transform">
+                          <div className={`font-['Special_Elite'] font-bold ${tierStyle.text} bg-black/5 px-3 py-1 border ${tierStyle.border} group-hover:scale-110 transition-transform`}>
                             ${item.cost}
                           </div>
                         )}

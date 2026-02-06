@@ -1,0 +1,459 @@
+/**
+ * 🎰 BALATRO-STYLE VISUAL EFFECTS
+ * 
+ * CRT filter, glow effects, card animations, and visual polish
+ */
+
+/* ============================================
+   CSS CUSTOM PROPERTIES (Balatro Palette)
+   ============================================ */
+:root {
+  /* Dark theme colors */
+  --bg-dark: #0a0a12;
+  --bg-darker: #050508;
+  --surface: #1a1a2e;
+
+  /* Neon accents */
+  --neon-red: #ff4757;
+  --neon-gold: #ffd700;
+  --neon-purple: #9d4edd;
+  --neon-blue: #00d4ff;
+  --neon-green: #22c55e;
+
+  /* Glow intensities */
+  --glow-sm: 0 0 5px;
+  --glow-md: 0 0 10px;
+  --glow-lg: 0 0 20px;
+  --glow-xl: 0 0 40px;
+}
+
+/* ============================================
+   CRT/SCANLINE EFFECT
+   ============================================ */
+.crt-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.03) 0px,
+    rgba(0, 0, 0, 0.03) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  animation: crt-flicker 0.15s infinite;
+}
+
+.crt-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    rgba(0, 0, 0, 0.15) 100%
+  );
+}
+
+@keyframes crt-flicker {
+  0% {
+    opacity: 0.97;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.98;
+  }
+}
+
+/* ============================================
+   CARD GLOW EFFECTS
+   ============================================ */
+.card-glow {
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.card-glow::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.card-glow:hover::after {
+  opacity: 1;
+}
+
+/* Rarity-based glows */
+.card-glow-common::after {
+  box-shadow: var(--glow-sm) #888;
+}
+
+.card-glow-rare::after {
+  box-shadow:
+    var(--glow-md) #3b82f6,
+    var(--glow-lg) #3b82f6;
+}
+
+.card-glow-epic::after {
+  box-shadow:
+    var(--glow-md) var(--neon-purple),
+    var(--glow-xl) var(--neon-purple);
+}
+
+.card-glow-legendary::after {
+  box-shadow:
+    var(--glow-md) var(--neon-gold),
+    var(--glow-xl) var(--neon-gold);
+  animation: legendary-pulse 2s infinite;
+}
+
+.card-glow-cursed::after {
+  box-shadow:
+    var(--glow-md) var(--neon-red),
+    var(--glow-xl) var(--neon-red);
+  animation: cursed-pulse 1s infinite;
+}
+
+@keyframes legendary-pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes cursed-pulse {
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ============================================
+   CARD POP ANIMATIONS
+   ============================================ */
+.card-pop {
+  animation: card-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes card-pop {
+  0% {
+    transform: scale(0.3) rotateY(-180deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1) rotateY(-10deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+.card-slam {
+  animation: card-slam 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes card-slam {
+  0% {
+    transform: translateY(-100px) scale(1.2) rotate(-5deg);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(5px) scale(0.95) rotate(1deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.card-flip {
+  animation: card-flip 0.6s ease-in-out;
+  transform-style: preserve-3d;
+}
+
+@keyframes card-flip {
+  0% {
+    transform: rotateY(0deg);
+  }
+  50% {
+    transform: rotateY(90deg);
+  }
+  100% {
+    transform: rotateY(0deg);
+  }
+}
+
+/* ============================================
+   SCORE/MULT ANIMATIONS
+   ============================================ */
+.score-pop {
+  animation: score-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes score-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.mult-shake {
+  animation: mult-shake 0.3s ease-in-out;
+}
+
+@keyframes mult-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px) rotate(-2deg);
+  }
+  50% {
+    transform: translateX(5px) rotate(2deg);
+  }
+  75% {
+    transform: translateX(-3px) rotate(-1deg);
+  }
+}
+
+.gold-pulse {
+  animation: gold-pulse 0.6s ease;
+}
+
+@keyframes gold-pulse {
+  0%,
+  100% {
+    text-shadow: var(--glow-sm) var(--neon-gold);
+  }
+  50% {
+    text-shadow:
+      var(--glow-xl) var(--neon-gold),
+      var(--glow-md) white;
+    transform: scale(1.1);
+  }
+}
+
+/* ============================================
+   COMBO ANIMATIONS
+   ============================================ */
+.combo-reveal {
+  animation: combo-reveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes combo-reveal {
+  0% {
+    transform: translateY(50px) scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(-10px) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.streak-fire {
+  position: relative;
+}
+
+.streak-fire::before {
+  content: "🔥";
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: fire-flicker 0.3s infinite alternate;
+}
+
+@keyframes fire-flicker {
+  0% {
+    transform: translateX(-50%) scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(-50%) scale(1.1);
+    opacity: 1;
+  }
+}
+
+/* ============================================
+   WIN/LOSS EFFECTS
+   ============================================ */
+.win-glow {
+  animation: win-glow 1s ease;
+}
+
+@keyframes win-glow {
+  0% {
+    box-shadow: 0 0 0 rgba(34, 197, 94, 0);
+  }
+  50% {
+    box-shadow:
+      var(--glow-xl) var(--neon-green),
+      0 0 60px var(--neon-green);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+.blackjack-burst {
+  animation: blackjack-burst 1.2s ease;
+}
+
+@keyframes blackjack-burst {
+  0% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  30% {
+    filter: brightness(1.5);
+    transform: scale(1.05);
+  }
+  60% {
+    filter: brightness(1.8);
+    transform: scale(1.02);
+  }
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+}
+
+.bust-shake {
+  animation: bust-shake 0.5s ease-in-out;
+}
+
+@keyframes bust-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+    filter: none;
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-5px);
+    filter: sepia(0.3) saturate(2);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(5px);
+    filter: sepia(0.3) saturate(2);
+  }
+}
+
+/* ============================================
+   HOVER EFFECTS
+   ============================================ */
+.hover-lift {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.hover-glow {
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: var(--glow-md) currentColor;
+}
+
+/* ============================================
+   PARTICLE CONTAINER
+   ============================================ */
+.particle-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  animation: confetti-fall 3s linear forwards;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   BUTTON EFFECTS
+   ============================================ */
+.btn-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-glow::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition:
+    width 0.6s ease,
+    height 0.6s ease;
+}
+
+.btn-glow:hover::before {
+  width: 300%;
+  height: 300%;
+}
+
+.btn-press:active {
+  transform: scale(0.95);
+}

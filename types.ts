@@ -158,12 +158,59 @@ export interface PowerUp {
   cost: number;
 }
 
+export enum ArtifactTier {
+  Common = 'COMMON',
+  Rare = 'RARE', 
+  Epic = 'EPIC',
+  Legendary = 'LEGENDARY',
+  Cursed = 'CURSED',
+}
+
+export enum ArtifactSet {
+  GamblerCollection = 'GAMBLER_COLLECTION', // Luck-based bonuses
+  ShadowPact = 'SHADOW_PACT',               // Risk/reward effects
+  BloodOath = 'BLOOD_OATH',                 // Sacrifice for power
+  FortuneFavor = 'FORTUNE_FAVOR',           // Betting bonuses
+  None = 'NONE',
+}
+
 export enum ArtifactType {
-  GoldenTouch = 'GOLDEN_TOUCH',
-  LuckySeven = 'LUCKY_SEVEN',
-  LuckyCoin = 'LUCKY_COIN',
-  AceInTheHole = 'ACE_IN_THE_HOLE',
-  VampiricGamble = 'VAMPIRIC_GAMBLE',
+  // === COMMON (White) - Basic stat boosts ===
+  GoldenTouch = 'GOLDEN_TOUCH',         // +5% win bonus
+  LuckyCoin = 'LUCKY_COIN',             // +2% wild card chance
+  SafeBet = 'SAFE_BET',                 // Reduce loss by 10%
+  ChipMagnet = 'CHIP_MAGNET',           // +$10 per win
+  SmallShield = 'SMALL_SHIELD',         // Block 1 bust per run
+  
+  // === RARE (Blue) - Notable effects ===
+  LuckySeven = 'LUCKY_SEVEN',           // 7 in hand = +$77 bonus
+  AceInTheHole = 'ACE_IN_THE_HOLE',     // First Ace = can peek dealer
+  DoubleDown = 'DOUBLE_DOWN_CHARM',     // Double costs 1.5x instead of 2x
+  InsurancePlus = 'INSURANCE_PLUS',     // Insurance pays 3:1
+  SplitMaster = 'SPLIT_MASTER',         // Free split once per round
+  ComboStarter = 'COMBO_STARTER',       // Win streak starts at 2
+  
+  // === EPIC (Purple) - Powerful effects ===
+  VampiricGamble = 'VAMPIRIC_GAMBLE',   // Win = heal 10% of bet
+  TimeWarp = 'TIME_WARP',               // Undo last hit once per round
+  CardCounter = 'CARD_COUNTER_ARTIFACT', // See next card in deck
+  GhostHand = 'GHOST_HAND',             // 10% chance bust = push instead
+  HighRollerBadge = 'HIGH_ROLLER_BADGE', // Bets of $200+ = +25% payout
+  DealersBane = 'DEALERS_BANE',         // Dealer bust chance +5%
+  
+  // === LEGENDARY (Gold) - Game-changing ===
+  PhoenixFeather = 'PHOENIX_FEATHER',   // Revive once at 50% bankroll
+  FortuneFavor_Legendary = 'FORTUNE_FAVOR_LEGENDARY', // Crit wins (2x) on 21
+  ShadowCloak = 'SHADOW_CLOAK',         // Boss traits reduced 50%
+  InfiniteLoop = 'INFINITE_LOOP',       // Push = replay hand
+  TheGodhand = 'THE_GODHAND',           // Start each hand with 20
+  
+  // === CURSED (Red) - High risk, high reward ===
+  BloodPact = 'BLOOD_PACT',             // +50% wins, but lose 10% on bust
+  DemonDice = 'DEMON_DICE',             // Random: 3x payout OR lose bet
+  SoulChain = 'SOUL_CHAIN',             // Wins give +$100, losses cost 2x
+  CursedDeck = 'CURSED_DECK',           // All cards wild, but -$20 per hit
+  VoidTouch = 'VOID_TOUCH',             // No push possible: always win or lose
 }
 
 export interface Artifact {
@@ -172,26 +219,143 @@ export interface Artifact {
   name: string;
   description: string;
   cost: number;
+  tier: ArtifactTier;
+  set?: ArtifactSet;
+  isActive?: boolean;     // For active artifacts with cooldown
+  cooldown?: number;      // Turns until can use again
+  isCursed?: boolean;     // Has negative side effects
+  drawback?: string;      // Description of curse drawback
+}
+
+export interface SetBonus {
+  set: ArtifactSet;
+  requiredCount: number;
+  bonusName: string;
+  bonusDescription: string;
+}
+
+// === SKILL TREE SYSTEM ===
+
+export enum SpecializationPath {
+  DealerKiller = 'DEALER_KILLER',   // Boss damage bonuses
+  HighRoller = 'HIGH_ROLLER',       // Betting multipliers
+  Survivor = 'SURVIVOR',             // Defensive abilities
+  None = 'NONE',
+}
+
+export interface SkillNode {
+  id: string;
+  name: string;
+  description: string;
+  path: SpecializationPath;
+  tier: number;                      // 1-5, higher = more powerful
+  cost: number;                      // Prestige points required
+  prerequisite?: string;             // ID of required skill
+  isUnlocked: boolean;
+  effect: {
+    type: 'BONUS' | 'ABILITY' | 'PASSIVE';
+    value: number;
+    target: string;                  // What the skill affects
+  };
+  icon: string;
+}
+
+export interface SkillTree {
+  unlockedSkills: string[];          // IDs of unlocked skills
+  currentPath: SpecializationPath;
+  pathProgress: Record<SpecializationPath, number>; // Points spent per path
 }
 
 export interface PrestigeUpgrades {
-  extraStartingCash: number; // e.g., 0, 500, 1000
-  bonusInventorySlots: number; // e.g., 0, 1, 2
-  increasedWildChance: number; // e.g., 0, 0.05, 0.1
+  // Original upgrades
+  extraStartingCash: number;
+  bonusInventorySlots: number;
+  increasedWildChance: number;
+  
+  // New Skill Tree upgrades
+  bossRewardMultiplier: number;      // +% boss rewards
+  criticalWinChance: number;         // % chance for 2x win
+  bustProtectionChance: number;      // % chance to survive bust
+  betMultiplierBonus: number;        // +% on all bets
+  startingArtifactSlots: number;     // # of artifacts at run start
+  heatMeterReduction: number;        // Reduce heat buildup
 }
 
 export interface MetaProgression {
   totalPrestigePoints: number;
   spentPrestigePoints: number;
   upgrades: PrestigeUpgrades;
+  skillTree: SkillTree;
+  totalRuns: number;
+  highestStageEver: number;
 }
 
 export enum BossTrait {
+  // Original traits
   DealerWinsPush = 'DEALER_WINS_PUSH',
-  HiddenCardBuff = 'HIDDEN_CARD_BUFF', // Dealer hidden card is always at least a 10
-  GreedyDealer = 'GREEDY_DEALER', // Dealer hits on soft 17 and soft 18
-  TaxCollector = 'TAX_COLLECTOR', // Every hit costs the player $10 extra
+  HiddenCardBuff = 'HIDDEN_CARD_BUFF',
+  GreedyDealer = 'GREEDY_DEALER',
+  TaxCollector = 'TAX_COLLECTOR',
+  
+  // New Boss traits
+  Perfectionist = 'PERFECTIONIST',        // Always hits to 19+
+  WildSwings = 'WILD_SWINGS',             // Random multipliers (0.5x - 3x)
+  CardCounter = 'CARD_COUNTER',           // Can see 1 player card
+  CursedTouch = 'CURSED_TOUCH',           // Push = lose card from deck
+  DoubleStakes = 'DOUBLE_STAKES',         // Double bet each round
+  ChipThief = 'CHIP_THIEF',               // Steals 10% chips on bust
+  PhantomCards = 'PHANTOM_CARDS',         // Can make 1 card invisible
+  MirrorPlay = 'MIRROR_PLAY',             // Copies player's last action
+  CardSwapper = 'CARD_SWAPPER',           // Swaps random cards
+  TheHouse = 'THE_HOUSE',                 // Final boss - multiple traits
 }
+
+export enum BossPersonality {
+  Aggressive = 'AGGRESSIVE',
+  Defensive = 'DEFENSIVE',
+  Unpredictable = 'UNPREDICTABLE',
+  Calculating = 'CALCULATING',
+  Intimidating = 'INTIMIDATING',
+}
+
+export interface BossDialogue {
+  intro: string[];
+  playerWin: string[];
+  playerLose: string[];
+  playerBust: string[];
+  dealerBust: string[];
+  taunt: string[];
+  special: string[]; // When using special ability
+}
+
+export interface BossData {
+  id: string;
+  name: string;
+  title: string;
+  traits: BossTrait[];
+  personality: BossPersonality;
+  dialogue: BossDialogue;
+  stageAppears: number; // Which stage this boss appears
+  rewardMultiplier: number; // Bonus for defeating
+  specialAbility?: {
+    name: string;
+    description: string;
+    triggerCondition: string;
+  };
+  visualTheme: {
+    primaryColor: string;
+    secondaryColor: string;
+    icon: string;
+  };
+}
+
+export interface HeatMeter {
+  level: number; // 0-100
+  consecutiveWins: number;
+  difficultyModifier: number; // 1.0 = normal, 1.5 = hard, etc.
+  isHot: boolean; // Triggers special events when hot
+}
+
 
 export interface GameState {
   deck: Card[];
@@ -231,5 +395,278 @@ export interface GameState {
   // Boss Mechanics
   isBossRound: boolean;
   activeBossTrait: BossTrait | null;
+  activeBossTraits: BossTrait[]; // For bosses with multiple traits
+  currentBossId: string | null; // ID of current boss
   rareArtifactChoices: Artifact[] | null;
+  
+  // Heat Meter System
+  heatMeter: HeatMeter;
+  
+  // Daily Challenge
+  activeChallenge?: DailyChallenge;
+}
+
+// === DAILY CHALLENGE SYSTEM ===
+
+export enum ChallengeModifier {
+  // Card modifiers
+  FaceCardsFive = 'FACE_CARDS_FIVE',           // All face cards worth 5
+  AcesOnly = 'ACES_ONLY',                       // Aces are always 11
+  NoSplit = 'NO_SPLIT',                         // Cannot split
+  NoDouble = 'NO_DOUBLE',                       // Cannot double down
+  
+  // Dealer modifiers
+  DealerHits17 = 'DEALER_HITS_17',             // Dealer hits on 17
+  DealerShowsAll = 'DEALER_SHOWS_ALL',         // Dealer shows both cards
+  AggressiveDealer = 'AGGRESSIVE_DEALER',      // Dealer always hits to 18+
+  
+  // Betting modifiers
+  MinBet100 = 'MIN_BET_100',                   // Minimum bet is $100
+  MaxBet50 = 'MAX_BET_50',                     // Maximum bet is $50
+  DoubleBets = 'DOUBLE_BETS',                  // All bets doubled
+  
+  // Special modifiers
+  OneLife = 'ONE_LIFE',                        // Bust = game over
+  TimePressure = 'TIME_PRESSURE',              // 10 seconds per decision
+  BlindPlay = 'BLIND_PLAY',                    // Can't see dealer's up card
+  Chaos = 'CHAOS',                             // Random card values
+}
+
+export enum ChallengeDifficulty {
+  Easy = 'EASY',
+  Medium = 'MEDIUM',
+  Hard = 'HARD',
+  Nightmare = 'NIGHTMARE',
+}
+
+export interface DailyChallenge {
+  id: string;
+  date: string;                                // YYYY-MM-DD format
+  name: string;
+  description: string;
+  modifiers: ChallengeModifier[];
+  difficulty: ChallengeDifficulty;
+  targetStage: number;                         // Stage to reach for completion
+  rewards: {
+    prestigePoints: number;
+    tokens: number;
+    specialReward?: string;                    // Unique reward description
+  };
+  isCompleted: boolean;
+  bestScore?: number;
+}
+
+export interface ChallengeProgress {
+  challengeId: string;
+  currentStage: number;
+  startedAt: number;                           // Timestamp
+  attemptsToday: number;
+  maxAttempts: number;
+}
+
+// === RUN MODE SYSTEM ===
+
+export enum RunMode {
+  Standard = 'STANDARD',           // Default 10-stage run
+  Endless = 'ENDLESS',             // Infinite stages, scaling difficulty
+  SpeedRun = 'SPEED_RUN',          // Timed run, beat 10 stages fastest
+  Ironman = 'IRONMAN',             // One life, no saves
+  Practice = 'PRACTICE',           // No rewards, unlimited retries
+}
+
+export interface RunModeConfig {
+  mode: RunMode;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  stages: number | 'infinite';
+  features: {
+    allowSaves: boolean;
+    allowRetries: boolean;
+    timer: boolean;
+    bonusRewards: number;          // % multiplier
+    difficultyMod: number;         // 1 = normal
+  };
+  unlockRequirement?: string;      // What to unlock this mode
+}
+
+// === ASCENSION SYSTEM ===
+
+export enum AscensionModifierType {
+  // Dealer buffs
+  DealerStartsWith = 'DEALER_STARTS_WITH',     // Dealer starts with specific card
+  DealerHitsHigher = 'DEALER_HITS_HIGHER',     // Dealer hits on higher values
+  DealerBlackjack = 'DEALER_BLACKJACK_BUFF',   // More dealer blackjacks
+  
+  // Player nerfs
+  LessBankroll = 'LESS_BANKROLL',              // Start with less money
+  HigherMinBet = 'HIGHER_MIN_BET',             // Higher minimum bet
+  LessArtifacts = 'LESS_ARTIFACTS',            // Fewer artifact slots
+  
+  // Shop changes
+  HigherPrices = 'HIGHER_PRICES',              // Shop costs more
+  LessShopItems = 'LESS_SHOP_ITEMS',           // Fewer items in shop
+  
+  // Boss buffs
+  MoreBossTraits = 'MORE_BOSS_TRAITS',         // Bosses have extra traits
+  DoubleHeat = 'DOUBLE_HEAT',                  // Heat builds 2x faster
+  
+  // Special
+  NoWildCards = 'NO_WILD_CARDS',               // Wild cards disabled
+  PermanentCurse = 'PERMANENT_CURSE',          // Random curse applied
+}
+
+export interface AscensionLevel {
+  level: number;                               // 1-20
+  name: string;
+  modifiers: AscensionModifierType[];
+  rewardMultiplier: number;                    // 1.0 = base, 2.0 = double
+  unlockRequirement: string;
+  icon: string;
+}
+
+// === JOKER SYSTEM (Balatro-style) ===
+
+export enum JokerRarity {
+  Common = 'COMMON',
+  Uncommon = 'UNCOMMON',
+  Rare = 'RARE',
+  Legendary = 'LEGENDARY',
+  Cursed = 'CURSED',
+}
+
+export enum JokerTrigger {
+  // Card-based triggers
+  OnCardPlayed = 'ON_CARD_PLAYED',           // When any card is played
+  OnSpecificCard = 'ON_SPECIFIC_CARD',       // When specific rank/suit is played
+  OnFaceCard = 'ON_FACE_CARD',               // When J/Q/K is played
+  OnAce = 'ON_ACE',                          // When Ace is played
+  OnSeven = 'ON_SEVEN',                      // When 7 is played
+  
+  // Hand-based triggers
+  OnHandStart = 'ON_HAND_START',             // At start of each hand
+  OnHandEnd = 'ON_HAND_END',                 // At end of each hand
+  OnBlackjack = 'ON_BLACKJACK',              // When player hits 21
+  OnBust = 'ON_BUST',                        // When player busts
+  OnPush = 'ON_PUSH',                        // On push result
+  
+  // Game-based triggers
+  OnWin = 'ON_WIN',                          // When player wins
+  OnLose = 'ON_LOSE',                        // When player loses
+  OnConsecutiveWin = 'ON_CONSECUTIVE_WIN',   // On win streak
+  OnBossDefeat = 'ON_BOSS_DEFEAT',           // When boss is defeated
+  
+  // Passive triggers
+  Always = 'ALWAYS',                         // Always active
+  OnShopEnter = 'ON_SHOP_ENTER',             // When entering shop
+}
+
+export enum JokerEffectType {
+  AddMult = 'ADD_MULT',                      // +X to multiplier
+  MultMult = 'MULT_MULT',                    // Xn multiplier
+  AddGold = 'ADD_GOLD',                      // +$ gold
+  ReduceLoss = 'REDUCE_LOSS',                // Reduce loss %
+  CardTransform = 'CARD_TRANSFORM',          // Change card properties
+  DeckModify = 'DECK_MODIFY',                // Add/remove cards from deck
+  BossDebuff = 'BOSS_DEBUFF',                // Reduce boss effectiveness
+  ExtraCards = 'EXTRA_CARDS',                // Draw extra cards
+}
+
+export interface JokerCondition {
+  type: 'HAND_CONTAINS' | 'HAND_VALUE' | 'STREAK' | 'BANKROLL' | 'STAGE' | 'NONE';
+  value?: string | number;
+  comparison?: 'EQUALS' | 'GREATER' | 'LESS' | 'CONTAINS';
+}
+
+export interface JokerEffect {
+  type: JokerEffectType;
+  value: number;
+  scaling?: number;                          // Optional scaling per condition
+}
+
+export interface Joker {
+  id: string;
+  name: string;
+  description: string;
+  rarity: JokerRarity;
+  trigger: JokerTrigger;
+  condition?: JokerCondition;
+  effect: JokerEffect;
+  cost: number;
+  icon: string;
+  isSold?: boolean;                          // Track if sold
+  isActive?: boolean;                        // For equipped jokers
+  
+  // Cursed joker specifics
+  drawback?: string;                         // Negative effect description
+  drawbackEffect?: JokerEffect;              // Negative effect
+}
+
+export interface JokerSlot {
+  joker: Joker | null;
+  isLocked: boolean;                         // Locked slots require unlock
+}
+
+// === CARD ENHANCEMENT SYSTEM ===
+
+export enum CardEnhancement {
+  None = 'NONE',
+  Polished = 'POLISHED',           // +5 to base value
+  Lucky = 'LUCKY',                 // 20% chance to draw again
+  Burning = 'BURNING',             // Deals damage on boss
+  Ghost = 'GHOST',                 // Counts as any suit
+  Golden = 'GOLDEN',               // +$20 when played
+  Cursed = 'CURSED',               // -5 to value
+  Wild = 'WILD',                   // Can be any rank
+  Steel = 'STEEL',                 // x1.5 mult when played
+  Glass = 'GLASS',                 // x2 mult, destroys on bust
+}
+
+export interface EnhancedCard {
+  rank: Rank;
+  suit: Suit;
+  enhancement: CardEnhancement;
+  isMarkedForRemoval?: boolean;
+  isDuplicated?: boolean;
+}
+
+export interface DeckModification {
+  type: 'REMOVE' | 'DUPLICATE' | 'ENHANCE' | 'TRANSFORM';
+  targetRank?: Rank;
+  targetSuit?: Suit;
+  enhancement?: CardEnhancement;
+  newRank?: Rank;
+  cost: number;
+}
+
+// === COMBO/SCORING CHAIN SYSTEM ===
+
+export enum ComboType {
+  Pair = 'PAIR',                   // Two of same rank
+  ThreeOfAKind = 'THREE_OF_A_KIND',
+  Suited = 'SUITED',               // All cards same suit
+  Sequential = 'SEQUENTIAL',       // Cards in sequence (5-6-7)
+  Perfect21 = 'PERFECT_21',        // Exactly 21
+  FiveCards = 'FIVE_CARDS',        // 5+ cards without bust
+  LowBall = 'LOW_BALL',            // Win with 17 or less
+  HighRoller = 'HIGH_ROLLER',      // Win with 20 or 21
+  Blackjack = 'BLACKJACK',         // Natural 21 (2 cards)
+  DoubleDown = 'DOUBLE_DOWN',      // Win after double
+}
+
+export interface ComboBonus {
+  type: ComboType;
+  name: string;
+  description: string;
+  multBonus: number;               // Added to multiplier
+  goldBonus: number;               // Added gold
+  icon: string;
+}
+
+export interface ScoringChain {
+  consecutiveWins: number;
+  combosTriggered: ComboType[];
+  totalMultiplier: number;
+  streakBonus: number;             // Mult bonus from streak
 }
