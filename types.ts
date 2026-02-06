@@ -142,6 +142,7 @@ export interface GameSettings {
   volume: number;
   isVoiceEnabled: boolean; // Keep for UI toggle but logic is removed
   theme: TableTheme;
+  apiKey?: string;
 }
 
 export enum PowerUpType {

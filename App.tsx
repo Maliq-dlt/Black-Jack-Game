@@ -58,6 +58,17 @@ const App: React.FC = () => {
     };
   };
 
+  const loadSettings = (): GameSettings => {
+    const saved = localStorage.getItem('royale_blackjack_settings');
+    if (saved) return JSON.parse(saved);
+    return {
+      volume: 0.5,
+      isVoiceEnabled: false,
+      theme: TableTheme.ClassicGreen,
+      apiKey: ''
+    };
+  };
+
   const loadStats = (): LifetimeStats => {
     const saved = localStorage.getItem('royale_blackjack_stats');
     if (saved) return JSON.parse(saved);
@@ -91,11 +102,7 @@ const App: React.FC = () => {
     history: [],
     dealerMessage: "Welcome to the high rollers table. Place your bets.",
     isGameStarted: false,
-    settings: {
-      volume: 0.5,
-      isVoiceEnabled: false,
-      theme: TableTheme.ClassicGreen
-    },
+    settings: loadSettings(),
     inventory: [],
     artifacts: [],
     isShopOpen: false,
@@ -136,6 +143,10 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('royale_blackjack_stats', JSON.stringify(lifetimeStats));
   }, [lifetimeStats]);
+
+  useEffect(() => {
+    localStorage.setItem('royale_blackjack_settings', JSON.stringify(gameState.settings));
+  }, [gameState.settings]);
 
   useEffect(() => {
     if (gameState.bankroll > peakBankroll) {
@@ -783,6 +794,7 @@ const App: React.FC = () => {
       }));
       
       const comment = await getDealerCommentary(
+          gameState.settings.apiKey,
           gameState.playerHands[0], 
           gameState.dealerHand, 
           primaryResult, 
@@ -1015,7 +1027,7 @@ const App: React.FC = () => {
   };
 
   // Safe check for API key presence to avoid crashes if process is undefined
-  const hasApiKey = typeof process !== 'undefined' && process.env && process.env.API_KEY;
+  const hasApiKey = !!gameState.settings.apiKey;
 
   const currentTheme = THEME_COLORS[gameState.settings.theme];
 

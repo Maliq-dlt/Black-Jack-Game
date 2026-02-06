@@ -1,25 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Hand, GameResult } from "../types";
 
-const getAPIKey = (): string => {
-  try {
-    // Check if process is defined to avoid ReferenceError in some browser environments
-    if (typeof process !== "undefined" && process.env) {
-      return process.env.API_KEY || "";
-    }
-  } catch (e) {
-    // Fallback if process access fails
-  }
-  return "";
-};
-
 export const getDealerCommentary = async (
+  apiKey: string | undefined,
   playerHand: Hand,
   dealerHand: Hand,
   result: GameResult,
   amountWon: number,
 ): Promise<string> => {
-  const apiKey = getAPIKey();
   if (!apiKey) return "Dealer smiles silently.";
 
   const genAI = new GoogleGenerativeAI(apiKey);
