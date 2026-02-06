@@ -221,7 +221,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
           >
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-bold text-white tracking-wider">SETTINGS</h2>
-              <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
+              <button
+                onClick={onClose}
+                className="text-white/40 hover:text-white transition-colors"
+                aria-label="Close settings"
+              >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -243,6 +247,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
                   value={settings.volume}
                   onChange={(e) => onUpdateSettings({ ...settings, volume: parseFloat(e.target.value) })}
                   className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-yellow-600"
+                  aria-label="Master volume"
                 />
               </div>
 
@@ -255,6 +260,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
                 <button 
                   onClick={() => onUpdateSettings({ ...settings, isVoiceEnabled: !settings.isVoiceEnabled })}
                   className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 ${settings.isVoiceEnabled ? 'bg-yellow-600' : 'bg-zinc-700'}`}
+                  aria-label="Toggle dealer voice"
+                  aria-pressed={settings.isVoiceEnabled}
                 >
                   <motion.div 
                     animate={{ x: settings.isVoiceEnabled ? 24 : 0 }}
@@ -271,6 +278,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
                     <button
                       key={theme}
                       onClick={() => onUpdateSettings({ ...settings, theme })}
+                      aria-pressed={settings.theme === theme}
                       className={`
                         py-3 px-4 rounded-xl border-2 text-xs font-bold transition-all
                         ${settings.theme === theme 
