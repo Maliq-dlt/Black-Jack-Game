@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 
 interface ChipProps {
@@ -10,7 +10,7 @@ interface ChipProps {
   stackIndex?: number;
 }
 
-const Chip: React.FC<ChipProps> = ({ value, onClick, disabled, color, isStacked = false, stackIndex = 0 }) => {
+const Chip: React.FC<ChipProps> = memo(({ value, onClick, disabled, color, isStacked = false, stackIndex = 0 }) => {
   const colors = {
     red: { // Blood Token
       bg: 'bg-[#3a0a0a]',
@@ -91,7 +91,6 @@ const Chip: React.FC<ChipProps> = ({ value, onClick, disabled, color, isStacked 
       <div className="absolute inset-0 border border-white/5 pointer-events-none" />
     </motion.button>
   );
-};
+});
 
 export default Chip;
-
