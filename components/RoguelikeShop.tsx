@@ -134,7 +134,7 @@ export const RoguelikeShop: React.FC<RoguelikeShopProps> = ({
             initial={{ scale: 0.9, opacity: 0, rotateY: -10 }}
             animate={{ scale: 1, opacity: 1, rotateY: 0 }}
             exit={{ scale: 0.9, opacity: 0, rotateY: 10 }}
-            className="relative w-full max-w-4xl parchment-bg border-4 border-[#3a0a0a] rounded-sm p-8 shadow-[0_0_60px_rgba(0,0,0,0.8)] overflow-hidden"
+            className="relative w-full max-w-4xl parchment-bg border-4 border-[#3a0a0a] rounded-sm p-8 shadow-[0_0_60px_rgba(0,0,0,0.8)] overflow-y-auto max-h-[90vh]"
             style={{ clipPath: 'polygon(0.5% 1%, 99% 0%, 100% 2%, 99.5% 98%, 98% 100%, 1% 99%, 0% 98%, 0.5% 2%)' }}
           >
             {/* Background Grain Overlay */}

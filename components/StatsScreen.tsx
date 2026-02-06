@@ -46,7 +46,7 @@ const StatsScreen: React.FC<StatsScreenProps> = ({ isOpen, onClose, stats }) => 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="relative w-full max-w-4xl parchment-bg border-4 border-[#1a1a1a] rounded-sm p-8 shadow-[0_0_60px_rgba(0,0,0,0.8)] my-8"
+            className="relative w-full max-w-4xl parchment-bg border-4 border-[#1a1a1a] rounded-sm p-8 shadow-[0_0_60px_rgba(0,0,0,0.8)] my-8 max-h-[90vh] overflow-y-auto"
             style={{ clipPath: 'polygon(0.5% 1%, 99.5% 0.5%, 100% 3%, 99% 97%, 98.5% 100%, 1.5% 99.5%, 0% 98%, 1% 1.5%)' }}
           >
             {/* Background Grain Overlay */}

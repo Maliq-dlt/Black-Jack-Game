@@ -1340,7 +1340,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Player Area */}
-        <div className="flex justify-center gap-8 w-full max-w-4xl px-4 overflow-visible pb-4 pt-2 min-h-[140px]">
+        <div className="flex justify-center gap-8 w-full max-w-4xl px-4 overflow-visible pb-2 pt-1 min-h-[120px]">
             <AnimatePresence>
             {gameState.playerHands.map((hand, handIndex) => (
                 <motion.div 
@@ -1351,7 +1351,7 @@ const App: React.FC = () => {
                        If it's a split hand (created with 1 card), we want it to be visible immediately 
                        so the card 'flying' into it via layoutId works visible.
                        If it's a new deal (2 cards), standard fade in.
-                    */
+                     */
                     initial={hand.cards.length === 1 ? { opacity: 1, scale: 1 } : { opacity: 0, y: 50 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.3 } }}
@@ -1364,7 +1364,7 @@ const App: React.FC = () => {
                         gameState.activeHandIndex === handIndex ? 'opacity-100' : 'opacity-60'
                     }`}
                 >
-                     <div className="flex -space-x-12 mb-1 relative h-32 overflow-visible">
+                     <div className="flex -space-x-12 mb-0 relative h-28 overflow-visible">
                          {hand.cards.map((card, idx) => (
                             <div key={card.id} className="relative hover:z-50 transition-all duration-200">
                                 <CardComponent card={card} index={idx} />
@@ -1376,7 +1376,7 @@ const App: React.FC = () => {
                           )}
                      </div>
                      
-                     <div className={`px-4 py-1 rounded-full text-sm font-bold flex items-center gap-2 mt-2 shadow-lg backdrop-blur-sm ${
+                     <div className={`px-4 py-0.5 rounded-full text-sm font-bold flex items-center gap-2 mt-1 shadow-lg backdrop-blur-sm ${
                          hand.isBusted ? 'bg-red-900/80 text-red-200' : 
                          hand.isBlackjack ? 'bg-yellow-600/80 text-white' : 
                          gameState.activeHandIndex === handIndex ? 'bg-blue-600/80 text-white ring-2 ring-blue-400' : 'bg-gray-800/80 text-gray-400'
@@ -1393,7 +1393,7 @@ const App: React.FC = () => {
       </LayoutGroup>
 
       {/* Controls Footer */}
-      <div className="w-full bg-gradient-to-t from-black to-transparent p-4 pb-12 z-20">
+      <div className="w-full bg-gradient-to-t from-black to-transparent p-2 pb-8 z-20">
           <div className="max-w-3xl mx-auto">
               
               {/* Betting Controls */}
