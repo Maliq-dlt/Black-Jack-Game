@@ -134,48 +134,48 @@ export const RoguelikeShop: React.FC<RoguelikeShopProps> = ({
             initial={{ scale: 0.9, opacity: 0, rotateY: -10 }}
             animate={{ scale: 1, opacity: 1, rotateY: 0 }}
             exit={{ scale: 0.9, opacity: 0, rotateY: 10 }}
-            className="relative w-full max-w-4xl parchment-bg border-4 border-[#3a0a0a] rounded-sm p-8 shadow-[0_0_60px_rgba(0,0,0,0.8)] overflow-y-auto max-h-[90vh]"
+            className="relative w-full max-w-4xl bg-[#d1c7a7] border-4 border-[#3a0a0a] rounded-sm p-8 shadow-[0_0_60px_rgba(0,0,0,0.8)] overflow-y-auto max-h-[90vh]"
             style={{ clipPath: 'polygon(0.5% 1%, 99% 0%, 100% 2%, 99.5% 98%, 98% 100%, 1% 99%, 0% 98%, 0.5% 2%)' }}
           >
             {/* Background Grain Overlay */}
             <div className="absolute inset-0 opacity-10 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]" />
             
-            <div className="flex justify-between items-center mb-8 relative z-10">
+            <div className="flex justify-between items-start mb-8 relative z-10">
               <div>
-                <h2 className="text-4xl font-black text-[#1a1a1a] tracking-widest font-['Special_Elite']">BLACK MARKET</h2>
-                <p className="text-[#8b0000]/60 text-xs font-bold tracking-[0.3em] font-serif uppercase mt-1">THE LEDGER OF SIN & POWER</p>
+                <h2 className="text-5xl font-black text-[#1a1a1a] tracking-widest font-['Special_Elite']">BLACK MARKET</h2>
+                <p className="text-[#8b0000] text-sm font-bold tracking-[0.4em] font-serif uppercase mt-2">THE LEDGER OF SIN & POWER</p>
               </div>
               <div className="flex items-center gap-6">
                 <div className="text-right">
                   <span className="text-[#1a1a1a]/60 text-[10px] font-bold block uppercase tracking-tighter">Gold Pieces</span>
-                  <span className="text-3xl font-['Special_Elite'] font-bold text-[#1a1a1a]">${bankroll.toFixed(0)}</span>
+                  <span className="text-5xl font-['Special_Elite'] font-bold text-[#1a1a1a] tracking-tighter">${bankroll.toFixed(0)}</span>
                 </div>
-                <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-colors text-[#1a1a1a]">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                <button onClick={onClose} className="p-1 hover:bg-black/5 rounded-full transition-colors text-[#1a1a1a] mt-[-10px]">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 relative z-10">
               {/* Power-ups Section */}
               <div className="space-y-6">
-                <h3 className="text-sm font-bold text-gray-500 tracking-[.4em] uppercase border-b border-white/5 pb-2">Consumables</h3>
-                <div className="space-y-3">
+                <h3 className="text-lg font-bold text-blue-700 tracking-[.4em] uppercase border-b border-black/5 pb-2 font-serif italic opacity-60">Consumables</h3>
+                <div className="space-y-4">
                   {POWER_UPS.map((item) => (
                       <button
                         key={item.id}
                         disabled={bankroll < item.cost}
                         onClick={() => onBuyPowerUp(item)}
-                        className="w-full flex items-center justify-between p-4 bg-black/5 border-2 border-[#1a1a1a]/10 hover:border-[#8b0000]/40 transition-all group disabled:opacity-40"
-                        style={{ clipPath: 'polygon(0.5% 2%, 99% 1%, 100% 4%, 99% 97%, 98% 100%, 2% 99%, 0% 98%, 1% 2%)' }}
+                        className="w-full flex items-center justify-between p-5 bg-black/5 border-2 border-[#1a1a1a]/10 hover:border-[#8b0000]/40 transition-all group disabled:opacity-40 relative"
+                        style={{ clipPath: 'polygon(1% 4%, 99% 1%, 100% 8%, 98% 99%, 96% 100%, 2% 97%, 0% 92%, 1% 5%)' }}
                       >
-                        <div className="text-left">
-                          <div className="font-bold text-[#1a1a1a] text-sm group-hover:text-[#8b0000] transition-colors uppercase tracking-wide font-['Special_Elite']">{item.name}</div>
-                          <div className="text-[11px] text-[#1a1a1a]/60 line-clamp-1 italic font-serif">{item.description}</div>
+                        <div className="text-left pr-4">
+                          <div className="font-bold text-[#1a1a1a] text-lg group-hover:text-[#8b0000] transition-colors uppercase tracking-tight font-['Special_Elite']">{item.name}</div>
+                          <div className="text-[12px] text-[#1a1a1a]/60 italic font-serif leading-tight mt-0.5">{item.description}</div>
                         </div>
-                        <div className="font-['Special_Elite'] font-bold text-[#8b0000] bg-[#8b0000]/5 px-3 py-1 border border-[#8b0000]/20 group-hover:scale-110 transition-transform">
+                        <div className="min-w-[70px] h-11 flex items-center justify-center font-['Special_Elite'] font-bold text-xl text-[#8b0000] bg-black/5 border-2 border-[#8b0000]/30 transition-transform">
                           ${item.cost}
                         </div>
                       </button>
@@ -185,8 +185,8 @@ export const RoguelikeShop: React.FC<RoguelikeShopProps> = ({
 
               {/* Artifacts Section */}
               <div className="space-y-6">
-                <h3 className="text-sm font-bold text-gray-500 tracking-[.4em] uppercase border-b border-white/5 pb-2">Passive Artifacts</h3>
-                <div className="space-y-3">
+                <h3 className="text-lg font-bold text-blue-700 tracking-[.4em] uppercase border-b border-black/5 pb-2 font-serif italic opacity-60">Passive Artifacts</h3>
+                <div className="space-y-4">
                   {ARTIFACTS.map((item) => {
                     const isOwned = ownedArtifacts.some(a => a.id === item.id);
                     const tierStyle = TIER_COLORS[item.tier];
@@ -196,15 +196,15 @@ export const RoguelikeShop: React.FC<RoguelikeShopProps> = ({
                         disabled={bankroll < item.cost || isOwned}
                         onClick={() => onBuyArtifact(item)}
                         className={`
-                          w-full flex items-center justify-between p-4 transition-all border-2 group relative overflow-hidden
+                          w-full flex items-center justify-between p-5 transition-all border-2 group relative overflow-visible
                           ${isOwned 
-                            ? 'bg-[#8b0000]/10 border-[#8b0000]/20 opacity-80' 
-                            : `${tierStyle.bg} ${tierStyle.border} hover:border-[#8b0000]/40 disabled:opacity-40`}
+                            ? 'bg-black/10 border-black/20 opacity-50 grayscale' 
+                            : item.tier === ArtifactTier.Rare || item.tier === ArtifactTier.Epic ? 'bg-blue-50/20 border-blue-700/30 hover:border-blue-700 shadow-sm' : 'bg-black/5 border-[#1a1a1a]/10 hover:border-[#1a1a1a]/40'}
                         `}
-                        style={{ clipPath: 'polygon(1% 1%, 98% 2%, 100% 1%, 99% 98%, 97% 100%, 2% 98%, 0% 99%, 1% 3%)' }}
                       >
-                        {/* Tier Badge */}
-                        <div className={`absolute top-0 right-0 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider ${tierStyle.bg} ${tierStyle.text} border-l border-b ${tierStyle.border}`}>
+                        {/* Rarity Tag */}
+                        <div className={`absolute -top-3 -right-3 px-3 py-0.5 text-[9px] font-black uppercase tracking-widest border-2 z-20 shadow-sm
+                          ${item.tier === ArtifactTier.Rare || item.tier === ArtifactTier.Epic ? 'bg-blue-50 text-blue-700 border-blue-700' : 'bg-[#d1c7a7] text-gray-700 border-gray-400'}`}>
                           {item.tier}
                         </div>
                         
@@ -213,32 +213,22 @@ export const RoguelikeShop: React.FC<RoguelikeShopProps> = ({
                           <div className="absolute inset-0 bg-gradient-to-r from-red-900/20 to-transparent animate-pulse pointer-events-none" />
                         )}
                         
-                        <div className="text-left flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className={`font-bold text-sm transition-colors uppercase tracking-wide font-['Special_Elite'] ${isOwned ? 'text-[#8b0000]' : `${tierStyle.text} group-hover:text-[#8b0000]`}`}>
-                              {item.isCursed && '💀 '}{item.name} {isOwned && '✓'}
-                            </span>
+                        <div className="text-left pr-4">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <div className="font-bold text-[#1a1a1a] text-lg group-hover:text-blue-700 transition-colors uppercase tracking-tight font-['Special_Elite']">{item.name}</div>
                             {item.set && (
-                              <span className="text-[8px] px-1.5 py-0.5 bg-black/10 border border-black/20 uppercase tracking-wider font-bold text-black/40">
+                              <span className="px-2 py-0.5 bg-black/10 text-[8px] font-bold text-gray-600 uppercase tracking-tighter rounded-sm self-center">
                                 {item.set.replace(/_/g, ' ')}
                               </span>
                             )}
                           </div>
-                          <div className="text-[11px] text-[#1a1a1a]/60 line-clamp-1 italic font-serif">{item.description}</div>
-                          {item.drawback && (
-                            <div className="text-[9px] text-red-700/80 font-bold mt-0.5">⚠ {item.drawback}</div>
-                          )}
+                          <div className="text-[12px] text-[#1a1a1a]/60 italic font-serif leading-tight">{item.description}</div>
                         </div>
-                        {!isOwned && (
-                          <div className={`font-['Special_Elite'] font-bold ${tierStyle.text} bg-black/5 px-3 py-1 border ${tierStyle.border} group-hover:scale-110 transition-transform`}>
-                            ${item.cost}
-                          </div>
-                        )}
-                        {isOwned && (
-                          <div className="text-[10px] font-bold text-[#8b0000] bg-[#8b0000]/10 px-3 py-1 border border-[#8b0000]/20 font-['Special_Elite']">
-                            ACQUIRED
-                          </div>
-                        )}
+                        <div className={`min-w-[70px] h-11 flex items-center justify-center font-['Special_Elite'] font-bold text-xl transition-transform border-2
+                          ${item.tier === ArtifactTier.Rare || item.tier === ArtifactTier.Epic ? 'text-blue-700 border-blue-700/40 bg-blue-50/50' : 'text-[#1a1a1a] border-[#1a1a1a]/30 bg-black/5'}
+                        `}>
+                          ${item.cost}
+                        </div>
                       </button>
                     );
                   })}
