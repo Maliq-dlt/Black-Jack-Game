@@ -28,7 +28,13 @@ const App: React.FC = () => {
   // --- Persistence ---
   const loadMeta = (): MetaProgression => {
     const saved = localStorage.getItem('royale_blackjack_meta');
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved meta data, resetting to default', e);
+      }
+    }
     return {
       totalPrestigePoints: 10, // Start with 10 for testing
       spentPrestigePoints: 0,
@@ -60,7 +66,13 @@ const App: React.FC = () => {
 
   const loadStats = (): LifetimeStats => {
     const saved = localStorage.getItem('royale_blackjack_stats');
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved stats, resetting to default', e);
+      }
+    }
     return {
       totalWins: 0,
       totalLosses: 0,
