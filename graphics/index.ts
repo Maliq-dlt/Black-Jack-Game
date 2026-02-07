@@ -71,5 +71,5 @@ export {
   LightningFlash
 } from './DynamicLighting';
 
-// Card3DSystem exports commented out (requires Three.js):
+// Card3DSystem (Three.js installed, but has type issues - import directly if needed)
 // export { default as CardScene } from './Card3DSystem';
