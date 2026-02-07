@@ -10,6 +10,7 @@ interface CardComponentProps {
   index: number;
   isWinning?: boolean;
   isLosing?: boolean;
+  onCardClick?: (card: Card, event: React.MouseEvent) => void;
 }
 
 // ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when parent state updates (e.g., betting, timer)
@@ -20,7 +21,8 @@ const CardComponent: React.FC<CardComponentProps> = memo(({
   className = '', 
   index,
   isWinning = false,
-  isLosing = false
+  isLosing = false,
+  onCardClick
 }) => {
   const colorClass = SUIT_COLORS[card.suit];
   
@@ -49,8 +51,20 @@ const CardComponent: React.FC<CardComponentProps> = memo(({
     ? '0 0 30px rgba(239, 68, 68, 0.8), 0 0 60px rgba(239, 68, 68, 0.4)'
     : wildGlow !== 'none' ? wildGlow : 'none';
 
+  // Check if card has special skills (for indicator)
+  const hasSkills = card.wildType !== WildCardType.None || card.eventType;
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (!isHidden && onCardClick) {
+      onCardClick(card, e);
+    }
+  };
+
   return (
-    <div className={`relative w-24 h-36 perspective-1000 cursor-pointer ${className}`}>
+    <div 
+      className={`relative w-24 h-36 perspective-1000 cursor-pointer ${className}`}
+      onClick={handleClick}
+    >
       <motion.div
         layoutId={card.id}
         initial={{ 

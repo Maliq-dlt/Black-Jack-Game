@@ -28,9 +28,6 @@
   },
   "exclude": [
     "node_modules",
-    "dist",
-    "Chain.bak",
-    "GamePlay.bak",
-    "Kimi_Agent_Roguelike Game Tips.bak"
+    "dist"
   ]
 }

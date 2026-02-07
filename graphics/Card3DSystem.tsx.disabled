@@ -1,0 +1,458 @@
+import React, { useRef, useState, useMemo } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useTexture, Text, RoundedBox, Environment } from '@react-three/drei';
+import * as THREE from 'three';
+
+/**
+ * ============================================
+ * PHASE 3: Full 3D Card System (Three.js)
+ * ============================================
+ * 
+ * High Effort Upgrade
+ * - True 3D cards dengan Three.js
+ * - Realistic lighting dan shadows
+ * - Physics-based interactions
+ * - Advanced materials
+ * 
+ * Note: Requires @react-three/fiber and @react-three/drei
+ * npm install @react-three/fiber @react-three/drei three
+ */
+
+// Card dimensions
+const CARD_WIDTH = 2.5;
+const CARD_HEIGHT = 3.5;
+const CARD_DEPTH = 0.05;
+
+// Card data interface
+interface Card3DData {
+  id: string;
+  rank: string;
+  suit: string;
+  color: string;
+  isFlipped: boolean;
+  position: [number, number, number];
+  rotation: [number, number, number];
+}
+
+/**
+ * CardFace - 3D card face component
+ */
+const CardFace: React.FC<{
+  rank: string;
+  suit: string;
+  color: string;
+}> = ({ rank, suit, color }) => {
+  return (
+    <group>
+      {/* Card background */}
+      <RoundedBox
+        args={[CARD_WIDTH, CARD_HEIGHT, 0.01]}
+        radius={0.1}
+        smoothness={4}
+      >
+        <meshStandardMaterial
+          color="#f5f5dc"
+          roughness={0.4}
+          metalness={0.1}
+        />
+      </RoundedBox>
+
+      {/* Corner rank (top-left) */}
+      <Text
+        position={[-CARD_WIDTH/2 + 0.25, CARD_HEIGHT/2 - 0.3, 0.02]}
+        fontSize={0.4}
+        color={color}
+        font="/fonts/Inter-Bold.woff"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {rank}
+      </Text>
+
+      {/* Corner suit (top-left) */}
+      <Text
+        position={[-CARD_WIDTH/2 + 0.25, CARD_HEIGHT/2 - 0.7, 0.02]}
+        fontSize={0.3}
+        color={color}
+        anchorX="center"
+        anchorY="middle"
+      >
+        {suit}
+      </Text>
+
+      {/* Center suit */}
+      <Text
+        position={[0, 0, 0.02]}
+        fontSize={1.2}
+        color={color}
+        anchorX="center"
+        anchorY="middle"
+      >
+        {suit}
+      </Text>
+
+      {/* Corner rank (bottom-right, rotated) */}
+      <Text
+        position={[CARD_WIDTH/2 - 0.25, -CARD_HEIGHT/2 + 0.3, 0.02]}
+        fontSize={0.4}
+        color={color}
+        rotation={[0, 0, Math.PI]}
+        anchorX="center"
+        anchorY="middle"
+      >
+        {rank}
+      </Text>
+
+      {/* Corner suit (bottom-right, rotated) */}
+      <Text
+        position={[CARD_WIDTH/2 - 0.25, -CARD_HEIGHT/2 + 0.7, 0.02]}
+        fontSize={0.3}
+        color={color}
+        rotation={[0, 0, Math.PI]}
+        anchorX="center"
+        anchorY="middle"
+      >
+        {suit}
+      </Text>
+
+      {/* Border */}
+      <RoundedBox
+        args={[CARD_WIDTH - 0.1, CARD_HEIGHT - 0.1, 0.005]}
+        radius={0.08}
+        smoothness={4}
+      >
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.3}
+        />
+      </RoundedBox>
+    </group>
+  );
+};
+
+/**
+ * CardBack - 3D card back component
+ */
+const CardBack: React.FC = () => {
+  return (
+    <group>
+      <RoundedBox
+        args={[CARD_WIDTH, CARD_HEIGHT, 0.01]}
+        radius={0.1}
+        smoothness={4}
+      >
+        <meshStandardMaterial
+          color="#1a1a1a"
+          roughness={0.6}
+          metalness={0.3}
+        />
+      </RoundedBox>
+
+      {/* Pattern */}
+      <RoundedBox
+        args={[CARD_WIDTH - 0.3, CARD_HEIGHT - 0.3, 0.005]}
+        radius={0.05}
+        smoothness={4}
+      >
+        <meshStandardMaterial
+          color="#2a2a2a"
+          roughness={0.8}
+        />
+      </RoundedBox>
+
+      {/* Center symbol */}
+      <Text
+        position={[0, 0, 0.02]}
+        fontSize={0.8}
+        color="#4a4a4a"
+        anchorX="center"
+        anchorY="middle"
+      >
+        ?
+      </Text>
+    </group>
+  );
+};
+
+/**
+ * PlayingCard3D - Main 3D card component
+ */
+interface PlayingCard3DProps {
+  card: Card3DData;
+  onClick?: () => void;
+  isHovered?: boolean;
+}
+
+const PlayingCard3D: React.FC<PlayingCard3DProps> = ({ 
+  card, 
+  onClick,
+  isHovered = false 
+}) => {
+  const groupRef = useRef<THREE.Group>(null);
+  const [hovered, setHovered] = useState(false);
+
+  // Smooth flip animation
+  const targetRotationY = card.isFlipped ? Math.PI : 0;
+  const targetY = (isHovered || hovered) ? 0.5 : 0;
+
+  useFrame((state, delta) => {
+    if (!groupRef.current) return;
+
+    // Smooth flip
+    groupRef.current.rotation.y = THREE.MathUtils.lerp(
+      groupRef.current.rotation.y,
+      targetRotationY,
+      delta * 8
+    );
+
+    // Hover lift
+    groupRef.current.position.y = THREE.MathUtils.lerp(
+      groupRef.current.position.y,
+      card.position[1] + targetY,
+      delta * 10
+    );
+
+    // Subtle idle animation
+    if (!isHovered && !hovered) {
+      groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.5) * 0.02;
+    }
+  });
+
+  return (
+    <group
+      ref={groupRef}
+      position={card.position}
+      rotation={card.rotation}
+      onClick={onClick}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+    >
+      {/* Card thickness */}
+      <RoundedBox
+        args={[CARD_WIDTH, CARD_HEIGHT, CARD_DEPTH]}
+        radius={0.1}
+        smoothness={4}
+      >
+        <meshStandardMaterial
+          color="#8b7355"
+          roughness={0.8}
+        />
+      </RoundedBox>
+
+      {/* Front face */}
+      <group position={[0, 0, CARD_DEPTH/2 + 0.001]}>
+        <CardFace rank={card.rank} suit={card.suit} color={card.color} />
+      </group>
+
+      {/* Back face */}
+      <group position={[0, 0, -CARD_DEPTH/2 - 0.001]} rotation={[0, Math.PI, 0]}>
+        <CardBack />
+      </group>
+
+      {/* Hover glow */}
+      {(isHovered || hovered) && (
+        <pointLight
+          position={[0, 1, 2]}
+          intensity={0.5}
+          color="#eab308"
+          distance={5}
+        />
+      )}
+    </group>
+  );
+};
+
+/**
+ * CardTable - 3D table surface
+ */
+const CardTable: React.FC = () => {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]}>
+      <planeGeometry args={[20, 20]} />
+      <meshStandardMaterial
+        color="#0a0a0a"
+        roughness={0.9}
+        metalness={0.1}
+      />
+    </mesh>
+  );
+};
+
+/**
+ * LightingSetup - Professional lighting untuk cards
+ */
+const LightingSetup: React.FC = () => {
+  return (
+    <>
+      {/* Ambient light */}
+      <ambientLight intensity={0.3} />
+
+      {/* Main directional light */}
+      <directionalLight
+        position={[5, 10, 5]}
+        intensity={1}
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+      />
+
+      {/* Rim light untuk card edges */}
+      <spotLight
+        position={[-5, 5, -5]}
+        intensity={0.5}
+        angle={Math.PI / 4}
+        penumbra={0.5}
+        color="#eab308"
+      />
+
+      {/* Fill light */}
+      <pointLight
+        position={[0, 3, 3]}
+        intensity={0.3}
+        color="#ffffff"
+      />
+    </>
+  );
+};
+
+/**
+ * CameraController - Camera dengan smooth movement
+ */
+const CameraController: React.FC<{
+  targetPosition?: [number, number, number];
+}> = ({ targetPosition = [0, 0, 8] }) => {
+  const { camera } = useThree();
+
+  useFrame((state, delta) => {
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetPosition[0], delta * 2);
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetPosition[1], delta * 2);
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetPosition[2], delta * 2);
+    camera.lookAt(0, 0, 0);
+  });
+
+  return null;
+};
+
+/**
+ * CardScene - Main 3D scene dengan cards
+ */
+interface CardSceneProps {
+  cards: Card3DData[];
+  onCardClick?: (cardId: string) => void;
+  hoveredCardId?: string | null;
+}
+
+export const CardScene: React.FC<CardSceneProps> = ({
+  cards,
+  onCardClick,
+  hoveredCardId
+}) => {
+  return (
+    <Canvas
+      shadows
+      camera={{ position: [0, 0, 8], fov: 50 }}
+      gl={{ antialias: true, alpha: true }}
+      style={{ background: 'transparent' }}
+    >
+      <LightingSetup />
+      <CameraController />
+      <Environment preset="city" />
+
+      <CardTable />
+
+      {cards.map((card) => (
+        <PlayingCard3D
+          key={card.id}
+          card={card}
+          onClick={() => onCardClick?.(card.id)}
+          isHovered={hoveredCardId === card.id}
+        />
+      ))}
+    </Canvas>
+  );
+};
+
+/**
+ * CardDeck3D - Animated deck of cards
+ */
+export const CardDeck3D: React.FC<{
+  cardCount?: number;
+  position?: [number, number, number];
+}> = ({ cardCount = 52, position = [4, -1, 0] }) => {
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame((state) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.1;
+    }
+  });
+
+  return (
+    <group ref={groupRef} position={position}>
+      {Array.from({ length: Math.min(cardCount, 10) }).map((_, i) => (
+        <RoundedBox
+          key={i}
+          args={[CARD_WIDTH, CARD_HEIGHT, CARD_DEPTH]}
+          radius={0.1}
+          position={[0, i * 0.02, 0]}
+          rotation={[0, (i * 0.02), 0]}
+        >
+          <meshStandardMaterial
+            color="#1a1a1a"
+            roughness={0.8}
+          />
+        </RoundedBox>
+      ))}
+
+      {/* Card count indicator */}
+      <Text
+        position={[0, 0.5, 0.5]}
+        fontSize={0.3}
+        color="#eab308"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {cardCount}
+      </Text>
+    </group>
+  );
+};
+
+/**
+ * ChipStack3D - 3D poker chips
+ */
+export const ChipStack3D: React.FC<{
+  value: number;
+  position?: [number, number, number];
+  color?: string;
+}> = ({ value, position = [-4, -1, 0], color = '#eab308' }) => {
+  const chipCount = Math.min(Math.floor(value / 100), 20);
+
+  return (
+    <group position={position}>
+      {Array.from({ length: chipCount }).map((_, i) => (
+        <mesh key={i} position={[0, i * 0.08, 0]}>
+          <cylinderGeometry args={[0.4, 0.4, 0.05, 32]} />
+          <meshStandardMaterial
+            color={color}
+            roughness={0.3}
+            metalness={0.7}
+          />
+        </mesh>
+      ))}
+
+      {/* Value text */}
+      <Text
+        position={[0, chipCount * 0.08 + 0.3, 0]}
+        fontSize={0.25}
+        color={color}
+        anchorX="center"
+        anchorY="middle"
+      >
+        ${value}
+      </Text>
+    </group>
+  );
+};
+
+export default CardScene;

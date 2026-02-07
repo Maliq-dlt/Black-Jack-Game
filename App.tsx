@@ -34,6 +34,10 @@ import { ComboPopup } from './components/ComboChainDisplay';
 import { Tooltip } from './components/Tooltip';
 import { useGameJuiceContext } from './context/GameJuiceContext';
 import { useComboContext } from './context/ComboContext';
+import CardSkillPopup from './components/CardSkillPopup';
+
+// Graphics Upgrade Phase 1
+import { GlobalStyles, GameBackground } from './graphics';
 
 // Icons
 const RefreshIcon = () => <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>;
@@ -178,6 +182,7 @@ const App: React.FC = () => {
   const [isSkillTreeOpen, setIsSkillTreeOpen] = useState(false);
   const [lifetimeStats, setLifetimeStats] = useState<LifetimeStats>(loadStats);
   const [pendingAchievement, setPendingAchievement] = useState<Achievement | null>(null);
+  const [selectedCardForInfo, setSelectedCardForInfo] = useState<{ card: Card; position: { x: number; y: number } } | null>(null);
 
   // Persist Meta-Progression and Stats
   useEffect(() => {
@@ -1320,6 +1325,11 @@ const App: React.FC = () => {
       <div className="wood-texture" />
       {/* Candlelight vignette */}
       <div className="candle-vignette" />
+      
+      {/* Phase 1 Graphics: Global Styles & Ambient Background */}
+      <GlobalStyles />
+      <GameBackground showParticles={true} showVignette={false} showNoise={true} particleCount={25} />
+      
       <AnimatePresence>
         {!gameState.isGameStarted && (
           <LandingScreen 
@@ -1554,7 +1564,8 @@ const App: React.FC = () => {
                             <CardComponent 
                                 card={card} 
                                 index={idx}
-                                isHidden={gameState.phase === GamePhase.PlayerTurn && idx === 0} 
+                                isHidden={gameState.phase === GamePhase.PlayerTurn && idx === 0}
+                                onCardClick={(c, e) => setSelectedCardForInfo({ card: c, position: { x: e.clientX, y: e.clientY } })}
                             />
                         </div>
                     ))}
@@ -1686,7 +1697,11 @@ const App: React.FC = () => {
                      <div className="flex -space-x-12 mb-0 relative h-28 overflow-visible">
                          {hand.cards.map((card, idx) => (
                             <div key={card.id} className="relative hover:z-50 transition-all duration-200">
-                                <CardComponent card={card} index={idx} />
+                                <CardComponent 
+                                    card={card} 
+                                    index={idx}
+                                    onCardClick={(c, e) => setSelectedCardForInfo({ card: c, position: { x: e.clientX, y: e.clientY } })}
+                                />
                             </div>
                          ))}
                           {hand.cards.length === 0 && (
@@ -1854,6 +1869,14 @@ const App: React.FC = () => {
               API KEY MISSING - AI COMMENTARY DISABLED
           </div>
       )}
+
+      {/* Card Skill Info Popup */}
+      <CardSkillPopup
+        card={selectedCardForInfo?.card || null}
+        isOpen={!!selectedCardForInfo}
+        onClose={() => setSelectedCardForInfo(null)}
+        position={selectedCardForInfo?.position}
+      />
       </div>
     </GameContainer>
   );

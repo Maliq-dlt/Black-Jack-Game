@@ -110,7 +110,7 @@ export const AchievementNotification: React.FC<AchievementNotificationProps> = (
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -100, scale: 0.8 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="fixed top-8 left-1/2 -translate-x-1/2 z-[9999]"
+            className="fixed bottom-8 left-8 z-[9999]"
           >
             {/* Glow Effect */}
             <motion.div
