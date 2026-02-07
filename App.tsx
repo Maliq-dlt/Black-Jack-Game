@@ -41,10 +41,8 @@ const RefreshIcon = () => <svg className="w-5 h-5 mr-2" fill="none" stroke="curr
 const App: React.FC = () => {
   // --- Persistence ---
   const loadMeta = (): MetaProgression => {
-    const saved = localStorage.getItem('royale_blackjack_meta');
-    if (saved) return JSON.parse(saved);
-    return {
-      totalPrestigePoints: 10, // Start with 10 for testing
+    const defaults: MetaProgression = {
+      totalPrestigePoints: 10,
       spentPrestigePoints: 0,
       upgrades: { 
         extraStartingCash: 0, 
@@ -70,23 +68,39 @@ const App: React.FC = () => {
       totalRuns: 0,
       highestStageEver: 0
     };
+    const saved = localStorage.getItem('royale_blackjack_meta');
+    if (!saved) return defaults;
+    try {
+      const parsed = JSON.parse(saved);
+      return {
+        ...defaults,
+        ...parsed,
+        upgrades: { ...defaults.upgrades, ...(parsed.upgrades || {}) },
+        skillTree: { ...defaults.skillTree, ...(parsed.skillTree || {}) }
+      };
+    } catch {
+      return defaults;
+    }
   };
 
   const loadSettings = (): GameSettings => {
-    const saved = localStorage.getItem('royale_blackjack_settings');
-    if (saved) return JSON.parse(saved);
-    return {
+    const defaults: GameSettings = {
       volume: 0.5,
       isVoiceEnabled: false,
       theme: TableTheme.ClassicGreen,
       apiKey: ''
     };
+    const saved = localStorage.getItem('royale_blackjack_settings');
+    if (!saved) return defaults;
+    try {
+      return { ...defaults, ...JSON.parse(saved) };
+    } catch {
+      return defaults;
+    }
   };
 
   const loadStats = (): LifetimeStats => {
-    const saved = localStorage.getItem('royale_blackjack_stats');
-    if (saved) return JSON.parse(saved);
-    return {
+    const defaults: LifetimeStats = {
       totalWins: 0,
       totalLosses: 0,
       totalBlackjacks: 0,
@@ -99,9 +113,17 @@ const App: React.FC = () => {
       totalRunsCompleted: 0,
       achievements: []
     };
+    const saved = localStorage.getItem('royale_blackjack_stats');
+    if (!saved) return defaults;
+    try {
+      return { ...defaults, ...JSON.parse(saved) };
+    } catch {
+      return defaults;
+    }
   };
 
   // --- State ---
+  const initialMeta = loadMeta();
   const [gameState, setGameState] = useState<GameState>({
     deck: [],
     dealerHand: createHand(),
@@ -129,9 +151,9 @@ const App: React.FC = () => {
     activeBossTraits: [],
     currentBossId: null,
     rareArtifactChoices: null,
-    meta: loadMeta(),
+    meta: initialMeta,
     removedRanks: [],
-    ascensionLevel: loadMeta().upgrades.extraStartingCash > 0 ? 1 : 0,
+    ascensionLevel: initialMeta.upgrades?.extraStartingCash > 0 ? 1 : 0,
     highestStageReached: 0,
     heatMeter: {
       level: 0,
@@ -1391,7 +1413,7 @@ const App: React.FC = () => {
       {gameState.isBossRound && gameState.currentBossId && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] w-full max-w-2xl px-4">
           <BossBattlePhases
-            boss={BOSS_DATA.find(b => b.id === gameState.currentBossId)!}
+            boss={BOSS_DATA.find(b => b.id === gameState.currentBossId) || BOSS_DATA[0]}
             onHealthChange={handleBossHealthChange}
             onPhaseChange={handleBossPhaseChange}
             onAbilityTrigger={handleBossAbilityTrigger}

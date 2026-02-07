@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { motion, useSpring, useTransform, MotionValue } from 'framer-motion';
+import { motion, useSpring, useTransform, MotionValue, AnimatePresence } from 'framer-motion';
 
 export type NumberFormat = 'currency' | 'percentage' | 'compact' | 'decimal';
 

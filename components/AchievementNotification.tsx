@@ -89,8 +89,7 @@ export const AchievementNotification: React.FC<AchievementNotificationProps> = (
   }, [achievement, onComplete]);
 
   if (!achievement) return null;
-
-  const config = RARITY_CONFIG[achievement.rarity];
+  const config = RARITY_CONFIG[achievement.rarity] || RARITY_CONFIG.common;
 
   return (
     <>
@@ -322,7 +321,7 @@ export const AchievementToast: React.FC<AchievementToastProps> = ({
   achievement,
   onClose
 }) => {
-  const config = RARITY_CONFIG[achievement.rarity];
+  const config = RARITY_CONFIG[achievement.rarity] || RARITY_CONFIG.common;
 
   return (
     <motion.div

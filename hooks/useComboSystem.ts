@@ -198,6 +198,29 @@ export const useComboSystem = (options: UseComboSystemOptions = {}): UseComboSys
     return types.map(type => activateCombo(type));
   }, [activateCombo]);
 
+  // Computed values
+  const activeCombos = useMemo(() => 
+    combos.filter(c => c.isActive).sort((a, b) => a.triggeredAt - b.triggeredAt),
+    [combos]
+  );
+
+  const totalMultiplier = useMemo(() => {
+    if (activeCombos.length === 0) return 1;
+    return activeCombos.reduce((acc, combo) => acc * combo.multiplier, 1);
+  }, [activeCombos]);
+
+  const baseScore = useMemo(() => 
+    activeCombos.reduce((acc, combo) => acc + combo.baseValue, 0),
+    [activeCombos]
+  );
+
+  const finalScore = useMemo(() => 
+    baseScore * totalMultiplier,
+    [baseScore, totalMultiplier]
+  );
+
+  const comboCount = activeCombos.length;
+
   // Check joker synergy
   const checkJokerSynergy = useCallback((jokerCount: number) => {
     const synergyId = combos.find(c => c.type === 'joker_synergy' && c.isActive)?.id;
@@ -234,29 +257,6 @@ export const useComboSystem = (options: UseComboSystemOptions = {}): UseComboSys
   const calculateFinalScore = useCallback((baseAmount: number): number => {
     return Math.floor(baseAmount * totalMultiplier);
   }, [totalMultiplier]);
-
-  // Computed values
-  const activeCombos = useMemo(() => 
-    combos.filter(c => c.isActive).sort((a, b) => a.triggeredAt - b.triggeredAt),
-    [combos]
-  );
-
-  const totalMultiplier = useMemo(() => {
-    if (activeCombos.length === 0) return 1;
-    return activeCombos.reduce((acc, combo) => acc * combo.multiplier, 1);
-  }, [activeCombos]);
-
-  const baseScore = useMemo(() => 
-    activeCombos.reduce((acc, combo) => acc + combo.baseValue, 0),
-    [activeCombos]
-  );
-
-  const finalScore = useMemo(() => 
-    baseScore * totalMultiplier,
-    [baseScore, totalMultiplier]
-  );
-
-  const comboCount = activeCombos.length;
 
   return {
     combos,
