@@ -264,8 +264,10 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
             // Update rotation
             const newRotation = p.rotation + (p.vx * 2);
 
-            // Fade out near end of life
-            const newOpacity = lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1;
+            // Fade in at start (mimics motion.div initial), fade out at end
+            const fadeIn = lifeProgress < 0.15 ? lifeProgress / 0.15 : 1;
+            const fadeOut = lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1;
+            const newOpacity = Math.min(fadeIn, fadeOut);
 
             return {
               ...p,
@@ -379,20 +381,12 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
     );
   }
 
+  // ⚡ Bolt: Removed AnimatePresence and motion.div wrapper for individual particles
+  // to prevent massive reconciliation overhead during high-frequency updates.
+  // Opacity fade-in/out is now handled directly in the physics loop.
   return (
     <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">
-      <AnimatePresence>
-        {particles.map(particle => (
-          <motion.div
-            key={particle.id}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            {renderParticle(particle)}
-          </motion.div>
-        ))}
-      </AnimatePresence>
+      {particles.map(p => renderParticle(p))}
     </div>
   );
 };
