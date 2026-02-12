@@ -1308,6 +1308,19 @@ const App: React.FC = () => {
     });
   }, []);
 
+  // ⚡ Bolt: Memoized handlers to prevent re-renders of heavy components
+  const handleCardClick = useCallback((card: Card, event: React.MouseEvent) => {
+    setSelectedCardForInfo({ card, position: { x: event.clientX, y: event.clientY } });
+  }, []);
+
+  const handleParticleComplete = useCallback(() => {
+    setGlobalParticles(prev => ({ ...prev, trigger: false }));
+  }, []);
+
+  const handleFlashComplete = useCallback(() => {
+    setGlobalFlash(prev => ({ ...prev, active: false }));
+  }, []);
+
   return (
     <GameContainer ref={containerRef} className="h-screen w-full">
       <div 
@@ -1403,13 +1416,13 @@ const App: React.FC = () => {
         type={globalParticles.type} 
         trigger={globalParticles.trigger} 
         origin={globalParticles.origin}
-        onComplete={() => setGlobalParticles(prev => ({ ...prev, trigger: false }))} 
+        onComplete={handleParticleComplete}
       />
       <FlashOverlay 
         isActive={globalFlash.active} 
         type={globalFlash.type} 
         customColor={globalFlash.color}
-        onComplete={() => setGlobalFlash(prev => ({ ...prev, active: false }))} 
+        onComplete={handleFlashComplete}
       />
       
       {/* Notifications and Overlays */}
@@ -1565,7 +1578,7 @@ const App: React.FC = () => {
                                 card={card} 
                                 index={idx}
                                 isHidden={gameState.phase === GamePhase.PlayerTurn && idx === 0}
-                                onCardClick={(c, e) => setSelectedCardForInfo({ card: c, position: { x: e.clientX, y: e.clientY } })}
+                                onCardClick={handleCardClick}
                             />
                         </div>
                     ))}
@@ -1700,7 +1713,7 @@ const App: React.FC = () => {
                                 <CardComponent 
                                     card={card} 
                                     index={idx}
-                                    onCardClick={(c, e) => setSelectedCardForInfo({ card: c, position: { x: e.clientX, y: e.clientY } })}
+                                    onCardClick={handleCardClick}
                                 />
                             </div>
                          ))}
