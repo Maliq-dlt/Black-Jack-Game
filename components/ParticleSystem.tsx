@@ -187,7 +187,7 @@ const INTENSITY_MULTIPLIERS = {
  * - Configurable intensity
  * - Auto-cleanup
  */
-export const ParticleSystem: React.FC<ParticleSystemProps> = ({
+const ParticleSystemBase: React.FC<ParticleSystemProps> = ({
   type,
   trigger,
   origin = { x: 0.5, y: 0.5 },
@@ -396,6 +396,8 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
     </div>
   );
 };
+
+export const ParticleSystem = React.memo(ParticleSystemBase);
 
 /**
  * ParticleBurst - One-shot particle burst at click position
