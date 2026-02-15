@@ -15,6 +15,8 @@ export type ParticleType =
   | 'rain'
   | 'snow';
 
+type ShapeType = 'circle' | 'square' | 'diamond' | 'star';
+
 interface Particle {
   id: number;
   x: number;
@@ -27,6 +29,7 @@ interface Particle {
   opacity: number;
   life: number;
   maxLife: number;
+  shape: ShapeType;
 }
 
 interface ParticleSystemProps {
@@ -47,7 +50,7 @@ const PARTICLE_CONFIGS: Record<ParticleType, {
   sizeRange: [number, number];
   speedRange: [number, number];
   lifeRange: [number, number];
-  shapes: ('circle' | 'square' | 'diamond' | 'star')[];
+  shapes: ShapeType[];
 }> = {
   confetti: {
     count: (i) => 30 * i,
@@ -186,6 +189,7 @@ const INTENSITY_MULTIPLIERS = {
  * - Physics-based movement
  * - Configurable intensity
  * - Auto-cleanup
+ * - ⚡ Bolt Optimized: Uses HTML5 Canvas for high-performance rendering (no DOM/React overhead)
  */
 export const ParticleSystem: React.FC<ParticleSystemProps> = ({
   type,
@@ -195,7 +199,8 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
   duration = 3000,
   onComplete
 }) => {
-  const [particles, setParticles] = useState<Particle[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particlesRef = useRef<Particle[]>([]);
   const animationRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
 
@@ -214,6 +219,7 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
       const speed = config.speedRange[0] + Math.random() * (config.speedRange[1] - config.speedRange[0]);
+      const shape = config.shapes[Math.floor(Math.random() * config.shapes.length)];
       
       newParticles.push({
         id: Date.now() + i,
@@ -226,33 +232,131 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
         color: config.colors[Math.floor(Math.random() * config.colors.length)],
         opacity: 1,
         life: 0,
-        maxLife: config.lifeRange[0] + Math.random() * (config.lifeRange[1] - config.lifeRange[0])
+        maxLife: config.lifeRange[0] + Math.random() * (config.lifeRange[1] - config.lifeRange[0]),
+        shape: shape
       });
     }
 
     return newParticles;
   }, [type, intensity, origin]);
 
+  const drawParticle = (ctx: CanvasRenderingContext2D, p: Particle) => {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate((p.rotation * Math.PI) / 180);
+      ctx.globalAlpha = p.opacity;
+      ctx.fillStyle = p.color;
+
+      const half = p.size / 2;
+
+      switch (p.shape) {
+          case 'circle':
+              ctx.beginPath();
+              ctx.arc(0, 0, half, 0, Math.PI * 2);
+              ctx.fill();
+              // Simulate shadow
+              ctx.shadowColor = p.color;
+              ctx.shadowBlur = p.size;
+              break;
+          case 'square':
+              ctx.fillRect(-half, -half, p.size, p.size);
+              break;
+          case 'diamond':
+              ctx.beginPath();
+              ctx.moveTo(0, -half);
+              ctx.lineTo(half, 0);
+              ctx.lineTo(0, half);
+              ctx.lineTo(-half, 0);
+              ctx.closePath();
+              ctx.fill();
+              break;
+          case 'star':
+              // Simple 5-point star
+              ctx.beginPath();
+              const spikes = 5;
+              const outerRadius = half;
+              const innerRadius = half / 2;
+              let rot = Math.PI / 2 * 3;
+              let x = 0;
+              let y = 0;
+              let step = Math.PI / spikes;
+
+              ctx.moveTo(0, 0 - outerRadius);
+              for (let i = 0; i < spikes; i++) {
+                  x = 0 + Math.cos(rot) * outerRadius;
+                  y = 0 + Math.sin(rot) * outerRadius;
+                  ctx.lineTo(x, y);
+                  rot += step;
+
+                  x = 0 + Math.cos(rot) * innerRadius;
+                  y = 0 + Math.sin(rot) * innerRadius;
+                  ctx.lineTo(x, y);
+                  rot += step;
+              }
+              ctx.lineTo(0, 0 - outerRadius);
+              ctx.closePath();
+              ctx.fill();
+              break;
+      }
+
+      ctx.restore();
+  };
+
+  useEffect(() => {
+    // Handle resize
+    const handleResize = () => {
+        if (canvasRef.current) {
+            canvasRef.current.width = window.innerWidth;
+            canvasRef.current.height = window.innerHeight;
+        }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial size
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     if (trigger) {
-      const newParticles = createParticles();
-      setParticles(newParticles);
+      particlesRef.current = createParticles();
       startTimeRef.current = performance.now();
-
       const config = PARTICLE_CONFIGS[type];
+
+      if (canvasRef.current) {
+          canvasRef.current.width = window.innerWidth;
+          canvasRef.current.height = window.innerHeight;
+      }
 
       const animate = (currentTime: number) => {
         const elapsed = currentTime - startTimeRef.current;
+        const ctx = canvasRef.current?.getContext('2d');
 
-        if (elapsed > duration) {
-          setParticles([]);
+        if (!ctx || !canvasRef.current) return;
+
+        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+
+        if (elapsed > duration && particlesRef.current.length === 0) {
           onComplete?.();
           return;
         }
 
-        setParticles(prevParticles => 
-          prevParticles.map(p => {
-            const newLife = p.life + 16;
+        // Update and draw particles
+        // Filter in place by creating a new array only if needed, but for perf we just filter
+        let activeParticles = 0;
+
+        // Iterate backwards to allow safe removal if we were splicing,
+        // but here we build a new list or just filter?
+        // Filtering creates new arrays which is GC pressure.
+        // Better to swap-remove or just map-filter.
+        // Given existing pattern was map-filter, let's just loop and push to a temp array for next frame.
+
+        const nextParticles: Particle[] = [];
+
+        for (const p of particlesRef.current) {
+            const newLife = p.life + 16; // approximate 60fps
+            if (newLife >= p.maxLife) continue;
+
             const lifeProgress = newLife / p.maxLife;
             
             // Update position
@@ -264,23 +368,34 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
             // Update rotation
             const newRotation = p.rotation + (p.vx * 2);
 
-            // Fade out near end of life
+            // Fade out
             const newOpacity = lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1;
 
-            return {
-              ...p,
-              x: newX,
-              y: newY,
-              vx: newVx,
-              vy: newVy,
-              rotation: newRotation,
-              life: newLife,
-              opacity: Math.max(0, newOpacity)
-            };
-          }).filter(p => p.life < p.maxLife && p.opacity > 0)
-        );
+            if (newOpacity <= 0) continue;
 
-        animationRef.current = requestAnimationFrame(animate);
+            // Update particle in place (conceptually), but we need new object for immutable ref?
+            // Actually with useRef we can mutate objects if we want, but let's be clean.
+            p.x = newX;
+            p.y = newY;
+            p.vx = newVx;
+            p.vy = newVy;
+            p.rotation = newRotation;
+            p.life = newLife;
+            p.opacity = newOpacity;
+
+            drawParticle(ctx, p);
+            nextParticles.push(p);
+            activeParticles++;
+        }
+
+        particlesRef.current = nextParticles;
+
+        if (activeParticles > 0 || elapsed <= duration) {
+             animationRef.current = requestAnimationFrame(animate);
+        } else {
+             ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+             onComplete?.();
+        }
       };
 
       animationRef.current = requestAnimationFrame(animate);
@@ -290,74 +405,19 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
           cancelAnimationFrame(animationRef.current);
         }
       };
+    } else {
+        // If trigger false, clear canvas?
+        if (canvasRef.current) {
+            const ctx = canvasRef.current.getContext('2d');
+            ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        }
     }
   }, [trigger, createParticles, duration, type, onComplete]);
-
-  const config = PARTICLE_CONFIGS[type];
-
-  const renderParticle = (particle: Particle) => {
-    const shape = config.shapes[Math.floor(Math.random() * config.shapes.length)];
-    
-    const baseStyle: React.CSSProperties = {
-      position: 'absolute',
-      left: particle.x,
-      top: particle.y,
-      width: particle.size,
-      height: particle.size,
-      backgroundColor: particle.color,
-      opacity: particle.opacity,
-      transform: `rotate(${particle.rotation}deg)`,
-      pointerEvents: 'none'
-    };
-
-    switch (shape) {
-      case 'circle':
-        return (
-          <div
-            key={particle.id}
-            style={{
-              ...baseStyle,
-              borderRadius: '50%',
-              boxShadow: `0 0 ${particle.size}px ${particle.color}`
-            }}
-          />
-        );
-      case 'square':
-        return (
-          <div
-            key={particle.id}
-            style={baseStyle}
-          />
-        );
-      case 'diamond':
-        return (
-          <div
-            key={particle.id}
-            style={{
-              ...baseStyle,
-              clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'
-            }}
-          />
-        );
-      case 'star':
-        return (
-          <div
-            key={particle.id}
-            style={{
-              ...baseStyle,
-              clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
-            }}
-          />
-        );
-      default:
-        return null;
-    }
-  };
 
   if (type === 'shockwave') {
     return (
       <AnimatePresence>
-        {trigger && particles.length > 0 && (
+        {trigger && (
           <motion.div
             initial={{ scale: 0, opacity: 0.8 }}
             animate={{ scale: 4, opacity: 0 }}
@@ -380,20 +440,11 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">
-      <AnimatePresence>
-        {particles.map(particle => (
-          <motion.div
-            key={particle.id}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            {renderParticle(particle)}
-          </motion.div>
-        ))}
-      </AnimatePresence>
-    </div>
+    <canvas
+        ref={canvasRef}
+        className="fixed inset-0 pointer-events-none z-[9999]"
+        style={{ width: '100%', height: '100%' }}
+    />
   );
 };
 
@@ -437,6 +488,9 @@ export const ParticleBurst: React.FC<ParticleBurstProps> = ({
 
 /**
  * ContinuousParticles - Particles yang terus berjalan (rain, snow)
+ * Note: Kept as separate DOM implementation for now as it's less performance critical
+ * (lower count usually) and handles wrapping differently.
+ * TODO: Port to canvas if density increases.
  */
 interface ContinuousParticlesProps {
   type: 'rain' | 'snow';
@@ -459,6 +513,8 @@ export const ContinuousParticles: React.FC<ContinuousParticlesProps> = ({
     // Initialize particles
     const initialParticles: Particle[] = [];
     for (let i = 0; i < particleCount; i++) {
+        // Need to cast shape or pick one, but for rain/snow config usually has 1 shape
+        const shape = config.shapes[0];
       initialParticles.push({
         id: i,
         x: Math.random() * window.innerWidth,
@@ -470,7 +526,8 @@ export const ContinuousParticles: React.FC<ContinuousParticlesProps> = ({
         color: config.colors[Math.floor(Math.random() * config.colors.length)],
         opacity: 0.5 + Math.random() * 0.5,
         life: 0,
-        maxLife: Infinity
+        maxLife: Infinity,
+        shape: shape
       });
     }
     setParticles(initialParticles);
