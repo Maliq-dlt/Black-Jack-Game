@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export type ParticleType = 
@@ -16,7 +16,6 @@ export type ParticleType =
   | 'snow';
 
 interface Particle {
-  id: number;
   x: number;
   y: number;
   vx: number;
@@ -27,6 +26,7 @@ interface Particle {
   opacity: number;
   life: number;
   maxLife: number;
+  shape: 'circle' | 'square' | 'diamond' | 'star';
 }
 
 interface ParticleSystemProps {
@@ -179,13 +179,10 @@ const INTENSITY_MULTIPLIERS = {
 };
 
 /**
- * ParticleSystem - Advanced particle effects
+ * ⚡ Bolt: ParticleSystem - Performance Optimized with Canvas
  * 
- * Features:
- * - 12+ particle types
- * - Physics-based movement
- * - Configurable intensity
- * - Auto-cleanup
+ * Replaced expensive DOM-based rendering (100+ motion.divs) with a single Canvas element.
+ * Uses requestAnimationFrame for silky smooth 60fps animations without React overhead.
  */
 export const ParticleSystem: React.FC<ParticleSystemProps> = ({
   type,
@@ -195,28 +192,60 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
   duration = 3000,
   onComplete
 }) => {
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const animationRef = useRef<number | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particlesRef = useRef<Particle[]>([]);
+  const requestRef = useRef<number>();
   const startTimeRef = useRef<number>(0);
+  const onCompleteRef = useRef(onComplete);
 
-  const createParticles = useCallback(() => {
+  // Keep callback ref fresh
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  // Handle resize
+  const updateSize = useCallback(() => {
+    if (canvasRef.current) {
+      canvasRef.current.width = window.innerWidth * window.devicePixelRatio;
+      canvasRef.current.height = window.innerHeight * window.devicePixelRatio;
+      canvasRef.current.style.width = `${window.innerWidth}px`;
+      canvasRef.current.style.height = `${window.innerHeight}px`;
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('resize', updateSize);
+    updateSize();
+    return () => window.removeEventListener('resize', updateSize);
+  }, [updateSize]);
+
+  // Main Animation Loop
+  useEffect(() => {
+    if (!trigger || type === 'shockwave') return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Reset
+    updateSize(); // Ensure size is correct before starting
     const config = PARTICLE_CONFIGS[type];
-    const intensityMult = INTENSITY_MULTIPLIERS[intensity];
-    const count = config.count(intensityMult);
-    
-    const newParticles: Particle[] = [];
+    const count = config.count(INTENSITY_MULTIPLIERS[intensity]);
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    
     const originX = origin.x * viewportWidth;
     const originY = origin.y * viewportHeight;
 
+    // Initialize Particles
+    particlesRef.current = [];
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
       const speed = config.speedRange[0] + Math.random() * (config.speedRange[1] - config.speedRange[0]);
-      
-      newParticles.push({
-        id: Date.now() + i,
+      const shape = config.shapes[Math.floor(Math.random() * config.shapes.length)];
+
+      particlesRef.current.push({
         x: originX,
         y: originY,
         vx: Math.cos(angle) * speed,
@@ -226,141 +255,137 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
         color: config.colors[Math.floor(Math.random() * config.colors.length)],
         opacity: 1,
         life: 0,
-        maxLife: config.lifeRange[0] + Math.random() * (config.lifeRange[1] - config.lifeRange[0])
+        maxLife: config.lifeRange[0] + Math.random() * (config.lifeRange[1] - config.lifeRange[0]),
+        shape
       });
     }
 
-    return newParticles;
-  }, [type, intensity, origin]);
+    startTimeRef.current = performance.now();
 
-  useEffect(() => {
-    if (trigger) {
-      const newParticles = createParticles();
-      setParticles(newParticles);
-      startTimeRef.current = performance.now();
+    const animate = (time: number) => {
+      if (!ctx || !canvas) return;
+      const elapsed = time - startTimeRef.current;
 
-      const config = PARTICLE_CONFIGS[type];
+      if (elapsed > duration) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        onCompleteRef.current?.();
+        return;
+      }
 
-      const animate = (currentTime: number) => {
-        const elapsed = currentTime - startTimeRef.current;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio); // Handle High DPI
 
-        if (elapsed > duration) {
-          setParticles([]);
-          onComplete?.();
-          return;
+      // Update and Draw
+      particlesRef.current = particlesRef.current.map(p => {
+        const newLife = p.life + 16.67; // Assuming 60fps
+        const lifeProgress = newLife / p.maxLife;
+
+        // Physics
+        const newVx = p.vx * config.drag;
+        const newVy = p.vy * config.drag + config.gravity;
+        const newX = p.x + newVx;
+        const newY = p.y + newVy;
+        const newRotation = p.rotation + (p.vx * 2);
+
+        // Opacity
+        const newOpacity = lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1;
+
+        if (newLife >= p.maxLife || newOpacity <= 0) return null;
+
+        // Draw
+        ctx.save();
+        ctx.translate(newX, newY);
+        ctx.rotate((newRotation * Math.PI) / 180);
+        ctx.globalAlpha = Math.max(0, newOpacity);
+        ctx.fillStyle = p.color;
+
+        switch (p.shape) {
+          case 'circle':
+            ctx.beginPath();
+            ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+          case 'square':
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+            break;
+          case 'diamond':
+            ctx.beginPath();
+            ctx.moveTo(0, -p.size / 2);
+            ctx.lineTo(p.size / 2, 0);
+            ctx.lineTo(0, p.size / 2);
+            ctx.lineTo(-p.size / 2, 0);
+            ctx.closePath();
+            ctx.fill();
+            break;
+          case 'star':
+            // Simple 5-point star
+            const spikes = 5;
+            const outerRadius = p.size / 2;
+            const innerRadius = p.size / 4;
+            let rot = Math.PI / 2 * 3;
+            let x = 0;
+            let y = 0;
+            const step = Math.PI / spikes;
+
+            ctx.beginPath();
+            ctx.moveTo(0, -outerRadius);
+            for(let i=0; i<spikes; i++){
+                x = Math.cos(rot) * outerRadius;
+                y = Math.sin(rot) * outerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+
+                x = Math.cos(rot) * innerRadius;
+                y = Math.sin(rot) * innerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+            }
+            ctx.lineTo(0, -outerRadius);
+            ctx.closePath();
+            ctx.fill();
+            break;
         }
 
-        setParticles(prevParticles => 
-          prevParticles.map(p => {
-            const newLife = p.life + 16;
-            const lifeProgress = newLife / p.maxLife;
-            
-            // Update position
-            const newVx = p.vx * config.drag;
-            const newVy = p.vy * config.drag + config.gravity;
-            const newX = p.x + newVx;
-            const newY = p.y + newVy;
-            
-            // Update rotation
-            const newRotation = p.rotation + (p.vx * 2);
+        ctx.restore();
 
-            // Fade out near end of life
-            const newOpacity = lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1;
+        return {
+          ...p,
+          x: newX,
+          y: newY,
+          vx: newVx,
+          vy: newVy,
+          rotation: newRotation,
+          life: newLife,
+          opacity: newOpacity,
+          shape: p.shape // Keep shape
+        };
+      }).filter((p): p is Particle => p !== null);
 
-            return {
-              ...p,
-              x: newX,
-              y: newY,
-              vx: newVx,
-              vy: newVy,
-              rotation: newRotation,
-              life: newLife,
-              opacity: Math.max(0, newOpacity)
-            };
-          }).filter(p => p.life < p.maxLife && p.opacity > 0)
-        );
+      ctx.restore();
 
-        animationRef.current = requestAnimationFrame(animate);
-      };
-
-      animationRef.current = requestAnimationFrame(animate);
-
-      return () => {
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-        }
-      };
-    }
-  }, [trigger, createParticles, duration, type, onComplete]);
-
-  const config = PARTICLE_CONFIGS[type];
-
-  const renderParticle = (particle: Particle) => {
-    const shape = config.shapes[Math.floor(Math.random() * config.shapes.length)];
-    
-    const baseStyle: React.CSSProperties = {
-      position: 'absolute',
-      left: particle.x,
-      top: particle.y,
-      width: particle.size,
-      height: particle.size,
-      backgroundColor: particle.color,
-      opacity: particle.opacity,
-      transform: `rotate(${particle.rotation}deg)`,
-      pointerEvents: 'none'
+      if (particlesRef.current.length > 0) {
+        requestRef.current = requestAnimationFrame(animate);
+      } else {
+        onCompleteRef.current?.();
+      }
     };
 
-    switch (shape) {
-      case 'circle':
-        return (
-          <div
-            key={particle.id}
-            style={{
-              ...baseStyle,
-              borderRadius: '50%',
-              boxShadow: `0 0 ${particle.size}px ${particle.color}`
-            }}
-          />
-        );
-      case 'square':
-        return (
-          <div
-            key={particle.id}
-            style={baseStyle}
-          />
-        );
-      case 'diamond':
-        return (
-          <div
-            key={particle.id}
-            style={{
-              ...baseStyle,
-              clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'
-            }}
-          />
-        );
-      case 'star':
-        return (
-          <div
-            key={particle.id}
-            style={{
-              ...baseStyle,
-              clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
-            }}
-          />
-        );
-      default:
-        return null;
-    }
-  };
+    requestRef.current = requestAnimationFrame(animate);
 
+    return () => {
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    };
+  }, [trigger, type, intensity, origin, duration, updateSize]);
+
+  // Special Case for Shockwave (keep as DOM for Framer Motion spring physics)
   if (type === 'shockwave') {
     return (
       <AnimatePresence>
-        {trigger && particles.length > 0 && (
+        {trigger && (
           <motion.div
-            initial={{ scale: 0, opacity: 0.8 }}
-            animate={{ scale: 4, opacity: 0 }}
+            initial={{ scale: 0, opacity: 0.8, borderWidth: '4px' }}
+            animate={{ scale: 4, opacity: 0, borderWidth: '0px' }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut' }}
             className="fixed pointer-events-none z-[9999]"
@@ -369,31 +394,25 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
               top: origin.y * window.innerHeight - 100,
               width: 200,
               height: 200,
-              border: '4px solid white',
+              borderColor: 'white',
+              borderStyle: 'solid',
               borderRadius: '50%',
               boxShadow: '0 0 60px rgba(255, 255, 255, 0.5)'
             }}
+            onAnimationComplete={onComplete}
           />
         )}
       </AnimatePresence>
     );
   }
 
+  // Canvas Render
   return (
-    <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">
-      <AnimatePresence>
-        {particles.map(particle => (
-          <motion.div
-            key={particle.id}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            {renderParticle(particle)}
-          </motion.div>
-        ))}
-      </AnimatePresence>
-    </div>
+    <canvas
+      ref={canvasRef}
+      className={`fixed inset-0 pointer-events-none z-[9999] ${trigger ? 'block' : 'hidden'}`}
+      style={{ width: '100%', height: '100%' }}
+    />
   );
 };
 
@@ -436,7 +455,7 @@ export const ParticleBurst: React.FC<ParticleBurstProps> = ({
 };
 
 /**
- * ContinuousParticles - Particles yang terus berjalan (rain, snow)
+ * ContinuousParticles - Optimized with Canvas for Rain/Snow
  */
 interface ContinuousParticlesProps {
   type: 'rain' | 'snow';
@@ -447,89 +466,103 @@ export const ContinuousParticles: React.FC<ContinuousParticlesProps> = ({
   type,
   density = 'medium'
 }) => {
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const animationRef = useRef<number | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particlesRef = useRef<Particle[]>([]);
+  const requestRef = useRef<number>();
 
-  const densityMult = { low: 0.5, medium: 1, high: 2 }[density];
+  const updateSize = useCallback(() => {
+    if (canvasRef.current) {
+      canvasRef.current.width = window.innerWidth * window.devicePixelRatio;
+      canvasRef.current.height = window.innerHeight * window.devicePixelRatio;
+    }
+  }, []);
 
   useEffect(() => {
+    window.addEventListener('resize', updateSize);
+    updateSize();
+    return () => window.removeEventListener('resize', updateSize);
+  }, [updateSize]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
     const config = PARTICLE_CONFIGS[type];
+    const densityMult = { low: 0.5, medium: 1, high: 2 }[density];
     const particleCount = Math.floor(config.count(densityMult));
 
-    // Initialize particles
-    const initialParticles: Particle[] = [];
+    // Initialize
+    particlesRef.current = [];
     for (let i = 0; i < particleCount; i++) {
-      initialParticles.push({
-        id: i,
-        x: Math.random() * window.innerWidth,
-        y: Math.random() * window.innerHeight,
-        vx: (Math.random() - 0.5) * 2,
-        vy: config.speedRange[0] + Math.random() * (config.speedRange[1] - config.speedRange[0]),
-        size: config.sizeRange[0] + Math.random() * (config.sizeRange[1] - config.sizeRange[0]),
-        rotation: Math.random() * 360,
-        color: config.colors[Math.floor(Math.random() * config.colors.length)],
-        opacity: 0.5 + Math.random() * 0.5,
-        life: 0,
-        maxLife: Infinity
-      });
+        particlesRef.current.push({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            vx: (Math.random() - 0.5) * 2,
+            vy: config.speedRange[0] + Math.random() * (config.speedRange[1] - config.speedRange[0]),
+            size: config.sizeRange[0] + Math.random() * (config.sizeRange[1] - config.sizeRange[0]),
+            rotation: Math.random() * 360,
+            color: config.colors[Math.floor(Math.random() * config.colors.length)],
+            opacity: 0.5 + Math.random() * 0.5,
+            life: 0,
+            maxLife: Infinity,
+            shape: type === 'snow' ? 'circle' : 'square' // Simple mapping
+        });
     }
-    setParticles(initialParticles);
 
     const animate = () => {
-      setParticles(prevParticles => 
-        prevParticles.map(p => {
-          let newX = p.x + p.vx;
-          let newY = p.y + p.vy;
+        if (!ctx || !canvas) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
-          // Reset if out of bounds
-          if (newY > window.innerHeight) {
-            newY = -20;
-            newX = Math.random() * window.innerWidth;
-          }
-          if (newX > window.innerWidth) newX = 0;
-          if (newX < 0) newX = window.innerWidth;
+        particlesRef.current.forEach(p => {
+            // Update
+            p.x += p.vx;
+            p.y += p.vy;
 
-          return {
-            ...p,
-            x: newX,
-            y: newY
-          };
-        })
-      );
+            // Reset loop
+            if (p.y > window.innerHeight) {
+                p.y = -20;
+                p.x = Math.random() * window.innerWidth;
+            }
+            if (p.x > window.innerWidth) p.x = 0;
+            if (p.x < 0) p.x = window.innerWidth;
 
-      animationRef.current = requestAnimationFrame(animate);
+            // Draw
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.opacity;
+
+            if (type === 'snow') {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.translate(p.x, p.y);
+                ctx.rotate(15 * Math.PI / 180); // Rain slant
+                ctx.fillRect(0, 0, p.size, p.size * 3); // Rain drop shape
+                ctx.rotate(-15 * Math.PI / 180);
+                ctx.translate(-p.x, -p.y);
+            }
+        });
+
+        ctx.restore();
+        requestRef.current = requestAnimationFrame(animate);
     };
 
-    animationRef.current = requestAnimationFrame(animate);
-
+    requestRef.current = requestAnimationFrame(animate);
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+        if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [type, densityMult]);
-
-  const config = PARTICLE_CONFIGS[type];
+  }, [type, density, updateSize]);
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      {particles.map(particle => (
-        <div
-          key={particle.id}
-          style={{
-            position: 'absolute',
-            left: particle.x,
-            top: particle.y,
-            width: particle.size,
-            height: type === 'rain' ? particle.size * 3 : particle.size,
-            backgroundColor: particle.color,
-            opacity: particle.opacity,
-            borderRadius: type === 'snow' ? '50%' : '0',
-            transform: type === 'rain' ? 'rotate(15deg)' : 'none'
-          }}
-        />
-      ))}
-    </div>
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none z-0"
+      style={{ width: '100%', height: '100%' }}
+    />
   );
 };
 
