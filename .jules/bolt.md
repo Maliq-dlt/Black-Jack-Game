@@ -1,0 +1,3 @@
+## 2024-05-23 - Canvas vs DOM for Particles
+**Learning:** React state updates and DOM manipulation for high-frequency particle effects (60fps, hundreds of elements) cause significant performance overhead. HTML5 Canvas + `useRef` + `requestAnimationFrame` provides a much smoother experience by bypassing React's reconciliation.
+**Action:** When implementing high-frequency visual effects, prefer Canvas over DOM elements. Ensure `requestAnimationFrame` loops read current dimensions (e.g. `canvas.width`) rather than closing over stale values from `useEffect` initialization to handle resizing correctly.
