@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export type ParticleType = 
@@ -27,6 +27,7 @@ interface Particle {
   opacity: number;
   life: number;
   maxLife: number;
+  shape: 'circle' | 'square' | 'diamond' | 'star';
 }
 
 interface ParticleSystemProps {
@@ -179,13 +180,9 @@ const INTENSITY_MULTIPLIERS = {
 };
 
 /**
- * ParticleSystem - Advanced particle effects
- * 
- * Features:
- * - 12+ particle types
- * - Physics-based movement
- * - Configurable intensity
- * - Auto-cleanup
+ * ⚡ Bolt Optimization: Replaced DOM-based particle rendering with HTML5 Canvas.
+ * This drastically improves performance by avoiding React reconciliation and DOM updates
+ * for hundreds of particles every frame.
  */
 export const ParticleSystem: React.FC<ParticleSystemProps> = ({
   type,
@@ -195,9 +192,36 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
   duration = 3000,
   onComplete
 }) => {
-  const [particles, setParticles] = useState<Particle[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particlesRef = useRef<Particle[]>([]);
   const animationRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
+
+  // Shockwave is handled via DOM/Framer Motion to preserve specific effect
+  if (type === 'shockwave') {
+    return (
+      <AnimatePresence>
+        {trigger && (
+          <motion.div
+            initial={{ scale: 0, opacity: 0.8 }}
+            animate={{ scale: 4, opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="fixed pointer-events-none z-[9999]"
+            style={{
+              left: origin.x * window.innerWidth - 100,
+              top: origin.y * window.innerHeight - 100,
+              width: 200,
+              height: 200,
+              border: '4px solid white',
+              borderRadius: '50%',
+              boxShadow: '0 0 60px rgba(255, 255, 255, 0.5)'
+            }}
+          />
+        )}
+      </AnimatePresence>
+    );
+  }
 
   const createParticles = useCallback(() => {
     const config = PARTICLE_CONFIGS[type];
@@ -226,17 +250,87 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
         color: config.colors[Math.floor(Math.random() * config.colors.length)],
         opacity: 1,
         life: 0,
-        maxLife: config.lifeRange[0] + Math.random() * (config.lifeRange[1] - config.lifeRange[0])
+        maxLife: config.lifeRange[0] + Math.random() * (config.lifeRange[1] - config.lifeRange[0]),
+        shape: config.shapes[Math.floor(Math.random() * config.shapes.length)]
       });
     }
 
     return newParticles;
   }, [type, intensity, origin]);
 
+  const drawParticle = (ctx: CanvasRenderingContext2D, p: Particle) => {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate((p.rotation * Math.PI) / 180);
+    ctx.globalAlpha = p.opacity;
+    ctx.fillStyle = p.color;
+
+    switch (p.shape) {
+      case 'circle':
+        ctx.beginPath();
+        ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+        if (type === 'coins' || type === 'gold_shower') {
+             ctx.shadowBlur = p.size / 2;
+             ctx.shadowColor = p.color;
+        }
+        break;
+      case 'square':
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        break;
+      case 'diamond':
+        ctx.beginPath();
+        ctx.moveTo(0, -p.size / 2);
+        ctx.lineTo(p.size / 2, 0);
+        ctx.lineTo(0, p.size / 2);
+        ctx.lineTo(-p.size / 2, 0);
+        ctx.closePath();
+        ctx.fill();
+        break;
+      case 'star':
+        const spikes = 5;
+        const outer = p.size / 2;
+        const inner = p.size / 4;
+        let rot = Math.PI / 2 * 3;
+        let x = 0;
+        let y = 0;
+        const step = Math.PI / spikes;
+
+        ctx.beginPath();
+        ctx.moveTo(0, -outer);
+        for (let i = 0; i < spikes; i++) {
+            x = Math.cos(rot) * outer;
+            y = Math.sin(rot) * outer;
+            ctx.lineTo(x, y);
+            rot += step;
+
+            x = Math.cos(rot) * inner;
+            y = Math.sin(rot) * inner;
+            ctx.lineTo(x, y);
+            rot += step;
+        }
+        ctx.lineTo(0, -outer);
+        ctx.closePath();
+        ctx.fill();
+        break;
+    }
+    ctx.restore();
+  };
+
   useEffect(() => {
-    if (trigger) {
-      const newParticles = createParticles();
-      setParticles(newParticles);
+    if (trigger && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Handle DPI
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      particlesRef.current = createParticles();
       startTimeRef.current = performance.now();
 
       const config = PARTICLE_CONFIGS[type];
@@ -245,13 +339,24 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
         const elapsed = currentTime - startTimeRef.current;
 
         if (elapsed > duration) {
-          setParticles([]);
+          particlesRef.current = [];
+          ctx.save();
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.restore();
           onComplete?.();
           return;
         }
 
-        setParticles(prevParticles => 
-          prevParticles.map(p => {
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+
+        // Update and draw particles
+        const activeParticles: Particle[] = [];
+
+        for (const p of particlesRef.current) {
             const newLife = p.life + 16;
             const lifeProgress = newLife / p.maxLife;
             
@@ -267,20 +372,35 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
             // Fade out near end of life
             const newOpacity = lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1;
 
-            return {
-              ...p,
-              x: newX,
-              y: newY,
-              vx: newVx,
-              vy: newVy,
-              rotation: newRotation,
-              life: newLife,
-              opacity: Math.max(0, newOpacity)
-            };
-          }).filter(p => p.life < p.maxLife && p.opacity > 0)
-        );
+            if (newLife < p.maxLife && newOpacity > 0) {
+                // Update particle in place (or create new object)
+                // Since we are iterating, creating new object is safer for React mentality,
+                // but since we don't expose state, mutation is fine if careful.
+                // However, let's just create new object to be safe.
+                const updatedParticle: Particle = {
+                  ...p,
+                  x: newX,
+                  y: newY,
+                  vx: newVx,
+                  vy: newVy,
+                  rotation: newRotation,
+                  life: newLife,
+                  opacity: Math.max(0, newOpacity)
+                };
 
-        animationRef.current = requestAnimationFrame(animate);
+                drawParticle(ctx, updatedParticle);
+                activeParticles.push(updatedParticle);
+            }
+        }
+
+        particlesRef.current = activeParticles;
+
+        if (particlesRef.current.length > 0) {
+            animationRef.current = requestAnimationFrame(animate);
+        } else {
+            ctx.clearRect(0, 0, rect.width, rect.height);
+            onComplete?.();
+        }
       };
 
       animationRef.current = requestAnimationFrame(animate);
@@ -293,107 +413,30 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
     }
   }, [trigger, createParticles, duration, type, onComplete]);
 
-  const config = PARTICLE_CONFIGS[type];
-
-  const renderParticle = (particle: Particle) => {
-    const shape = config.shapes[Math.floor(Math.random() * config.shapes.length)];
-    
-    const baseStyle: React.CSSProperties = {
-      position: 'absolute',
-      left: particle.x,
-      top: particle.y,
-      width: particle.size,
-      height: particle.size,
-      backgroundColor: particle.color,
-      opacity: particle.opacity,
-      transform: `rotate(${particle.rotation}deg)`,
-      pointerEvents: 'none'
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+        if (canvasRef.current) {
+            const canvas = canvasRef.current;
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            // Context scale needs to be reset after resize
+            const ctx = canvas.getContext('2d');
+            if (ctx) ctx.scale(dpr, dpr);
+        }
     };
-
-    switch (shape) {
-      case 'circle':
-        return (
-          <div
-            key={particle.id}
-            style={{
-              ...baseStyle,
-              borderRadius: '50%',
-              boxShadow: `0 0 ${particle.size}px ${particle.color}`
-            }}
-          />
-        );
-      case 'square':
-        return (
-          <div
-            key={particle.id}
-            style={baseStyle}
-          />
-        );
-      case 'diamond':
-        return (
-          <div
-            key={particle.id}
-            style={{
-              ...baseStyle,
-              clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'
-            }}
-          />
-        );
-      case 'star':
-        return (
-          <div
-            key={particle.id}
-            style={{
-              ...baseStyle,
-              clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
-            }}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
-  if (type === 'shockwave') {
-    return (
-      <AnimatePresence>
-        {trigger && particles.length > 0 && (
-          <motion.div
-            initial={{ scale: 0, opacity: 0.8 }}
-            animate={{ scale: 4, opacity: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="fixed pointer-events-none z-[9999]"
-            style={{
-              left: origin.x * window.innerWidth - 100,
-              top: origin.y * window.innerHeight - 100,
-              width: 200,
-              height: 200,
-              border: '4px solid white',
-              borderRadius: '50%',
-              boxShadow: '0 0 60px rgba(255, 255, 255, 0.5)'
-            }}
-          />
-        )}
-      </AnimatePresence>
-    );
-  }
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">
-      <AnimatePresence>
-        {particles.map(particle => (
-          <motion.div
-            key={particle.id}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            {renderParticle(particle)}
-          </motion.div>
-        ))}
-      </AnimatePresence>
-    </div>
+    <canvas
+        ref={canvasRef}
+        className="fixed inset-0 pointer-events-none z-[9999]"
+        style={{ width: '100%', height: '100%' }}
+    />
   );
 };
 
@@ -436,7 +479,7 @@ export const ParticleBurst: React.FC<ParticleBurstProps> = ({
 };
 
 /**
- * ContinuousParticles - Particles yang terus berjalan (rain, snow)
+ * ContinuousParticles - Optimized with Canvas
  */
 interface ContinuousParticlesProps {
   type: 'rain' | 'snow';
@@ -447,12 +490,25 @@ export const ContinuousParticles: React.FC<ContinuousParticlesProps> = ({
   type,
   density = 'medium'
 }) => {
-  const [particles, setParticles] = useState<Particle[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
+  const particlesRef = useRef<Particle[]>([]);
 
   const densityMult = { low: 0.5, medium: 1, high: 2 }[density];
 
   useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Handle DPI
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
     const config = PARTICLE_CONFIGS[type];
     const particleCount = Math.floor(config.count(densityMult));
 
@@ -470,14 +526,19 @@ export const ContinuousParticles: React.FC<ContinuousParticlesProps> = ({
         color: config.colors[Math.floor(Math.random() * config.colors.length)],
         opacity: 0.5 + Math.random() * 0.5,
         life: 0,
-        maxLife: Infinity
+        maxLife: Infinity,
+        shape: type === 'snow' ? 'circle' : 'square' // Simplify shapes for rain/snow
       });
     }
-    setParticles(initialParticles);
+    particlesRef.current = initialParticles;
 
     const animate = () => {
-      setParticles(prevParticles => 
-        prevParticles.map(p => {
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+
+      particlesRef.current.forEach(p => {
           let newX = p.x + p.vx;
           let newY = p.y + p.vy;
 
@@ -489,13 +550,26 @@ export const ContinuousParticles: React.FC<ContinuousParticlesProps> = ({
           if (newX > window.innerWidth) newX = 0;
           if (newX < 0) newX = window.innerWidth;
 
-          return {
-            ...p,
-            x: newX,
-            y: newY
-          };
-        })
-      );
+          p.x = newX;
+          p.y = newY;
+
+          // Draw
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = p.opacity;
+
+          if (type === 'snow') {
+             ctx.beginPath();
+             ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+             ctx.fill();
+          } else {
+             // Rain
+             ctx.save();
+             ctx.translate(p.x, p.y);
+             ctx.rotate(15 * Math.PI / 180);
+             ctx.fillRect(0, 0, p.size, p.size * 3);
+             ctx.restore();
+          }
+      });
 
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -509,27 +583,29 @@ export const ContinuousParticles: React.FC<ContinuousParticlesProps> = ({
     };
   }, [type, densityMult]);
 
-  const config = PARTICLE_CONFIGS[type];
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+        if (canvasRef.current) {
+            const canvas = canvasRef.current;
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            const ctx = canvas.getContext('2d');
+            if (ctx) ctx.scale(dpr, dpr);
+        }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      {particles.map(particle => (
-        <div
-          key={particle.id}
-          style={{
-            position: 'absolute',
-            left: particle.x,
-            top: particle.y,
-            width: particle.size,
-            height: type === 'rain' ? particle.size * 3 : particle.size,
-            backgroundColor: particle.color,
-            opacity: particle.opacity,
-            borderRadius: type === 'snow' ? '50%' : '0',
-            transform: type === 'rain' ? 'rotate(15deg)' : 'none'
-          }}
-        />
-      ))}
-    </div>
+    <canvas
+        ref={canvasRef}
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{ width: '100%', height: '100%' }}
+    />
   );
 };
 
