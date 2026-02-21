@@ -32,8 +32,10 @@ const FLASH_COLORS: Record<FlashType, string> = {
  *   type="gold" 
  *   onComplete={() => setShowFlash(false)} 
  * />
+ *
+ * ⚡ Bolt: Wrapped in React.memo to prevent expensive re-renders when parent state updates
  */
-export const FlashOverlay: React.FC<FlashOverlayProps> = ({
+export const FlashOverlay: React.FC<FlashOverlayProps> = React.memo(({
   isActive,
   type = 'white',
   customColor,
@@ -83,7 +85,7 @@ export const FlashOverlay: React.FC<FlashOverlayProps> = ({
       )}
     </AnimatePresence>
   );
-};
+});
 
 /**
  * MultiFlashOverlay - Untuk efek flash berulang (seperti win celebration)
