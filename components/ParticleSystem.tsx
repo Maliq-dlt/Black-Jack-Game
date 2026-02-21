@@ -186,8 +186,10 @@ const INTENSITY_MULTIPLIERS = {
  * - Physics-based movement
  * - Configurable intensity
  * - Auto-cleanup
+ *
+ * ⚡ Bolt: Wrapped in React.memo to prevent expensive re-renders when parent state updates
  */
-export const ParticleSystem: React.FC<ParticleSystemProps> = ({
+export const ParticleSystem: React.FC<ParticleSystemProps> = React.memo(({
   type,
   trigger,
   origin = { x: 0.5, y: 0.5 },
@@ -395,7 +397,7 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
       </AnimatePresence>
     </div>
   );
-};
+});
 
 /**
  * ParticleBurst - One-shot particle burst at click position
