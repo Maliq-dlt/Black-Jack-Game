@@ -1040,6 +1040,10 @@ const App: React.FC = () => {
     }
   };
 
+  const handleCardClick = useCallback((card: Card, event: React.MouseEvent) => {
+    setSelectedCardForInfo({ card, position: { x: event.clientX, y: event.clientY } });
+  }, []);
+
   const handleStartGame = () => {
     // Apply Ascension modifiers
     const ascMod = gameState.ascensionLevel;
@@ -1565,7 +1569,7 @@ const App: React.FC = () => {
                                 card={card} 
                                 index={idx}
                                 isHidden={gameState.phase === GamePhase.PlayerTurn && idx === 0}
-                                onCardClick={(c, e) => setSelectedCardForInfo({ card: c, position: { x: e.clientX, y: e.clientY } })}
+                                onCardClick={handleCardClick}
                             />
                         </div>
                     ))}
@@ -1700,7 +1704,7 @@ const App: React.FC = () => {
                                 <CardComponent 
                                     card={card} 
                                     index={idx}
-                                    onCardClick={(c, e) => setSelectedCardForInfo({ card: c, position: { x: e.clientX, y: e.clientY } })}
+                                    onCardClick={handleCardClick}
                                 />
                             </div>
                          ))}
