@@ -1,0 +1,3 @@
+## 2024-05-23 - Stabilizing Animation Loops with `useCallback`
+**Learning:** `App.tsx` acts as a central state hub and re-renders frequently (e.g., during betting or typing dealer messages). Passing inline arrow functions (e.g., `onComplete={() => ...}`) to heavy animation components like `ParticleSystem` or `CardComponent` breaks `React.memo` optimizations and causes effect cleanups that reset active animations.
+**Action:** Always wrap event handlers passed to memoized or animation-heavy components in `useCallback` within `App.tsx` (e.g., `handleParticleComplete`, `handleCardClick`). This ensures stable references and prevents visual regressions like particle systems restarting mid-flight.
