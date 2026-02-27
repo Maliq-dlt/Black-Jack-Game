@@ -1222,6 +1222,35 @@ const App: React.FC = () => {
   const [globalFlash, setGlobalFlash] = useState<{ active: boolean; type: FlashType; color?: string }>({ active: false, type: 'white' });
   const [globalParticles, setGlobalParticles] = useState<{ trigger: boolean; type: ParticleType; origin?: { x: number; y: number } }>({ trigger: false, type: 'sparkle' });
 
+  // Stable callbacks for UI elements to prevent re-renders
+  const handleCardClick = useCallback((c: Card, e: React.MouseEvent) => {
+    setSelectedCardForInfo({ card: c, position: { x: e.clientX, y: e.clientY } });
+  }, []);
+
+  const handleParticleComplete = useCallback(() => {
+    setGlobalParticles(prev => ({ ...prev, trigger: false }));
+  }, []);
+
+  const handleFlashComplete = useCallback(() => {
+    setGlobalFlash(prev => ({ ...prev, active: false }));
+  }, []);
+
+  const handleShopClose = useCallback(() => {
+    setGameState(prev => ({ ...prev, isShopOpen: false }));
+  }, []);
+
+  const handleDeckViewerClose = useCallback(() => {
+    setIsDeckViewerOpen(false);
+  }, []);
+
+  const handleStatsClose = useCallback(() => {
+    setIsStatsOpen(false);
+  }, []);
+
+  const handleSettingsClose = useCallback(() => {
+    setIsSettingsOpen(false);
+  }, []);
+
   useEffect(() => {
     return juice.registerFlashCallback((type, color) => {
       setGlobalFlash({ active: true, type, color });
@@ -1343,14 +1372,14 @@ const App: React.FC = () => {
 
       <SettingsModal 
         isOpen={isSettingsOpen} 
-        onClose={() => setIsSettingsOpen(false)} 
+        onClose={handleSettingsClose}
         settings={gameState.settings}
         onUpdateSettings={handleUpdateSettings}
       />
 
       <EnhancedShop
         isOpen={gameState.isShopOpen}
-        onClose={() => setGameState(prev => ({ ...prev, isShopOpen: false }))}
+        onClose={handleShopClose}
         bankroll={gameState.bankroll}
         shopState={gameState.shopState}
         onBuyItem={handleBuyShopItem}
@@ -1382,14 +1411,14 @@ const App: React.FC = () => {
 
       <DeckViewer 
         isOpen={isDeckViewerOpen}
-        onClose={() => setIsDeckViewerOpen(false)}
+        onClose={handleDeckViewerClose}
         deck={gameState.deck}
         removedRanks={gameState.removedRanks}
       />
 
       <StatsScreen
         isOpen={isStatsOpen}
-        onClose={() => setIsStatsOpen(false)}
+        onClose={handleStatsClose}
         stats={lifetimeStats}
       />
 
@@ -1403,13 +1432,13 @@ const App: React.FC = () => {
         type={globalParticles.type} 
         trigger={globalParticles.trigger} 
         origin={globalParticles.origin}
-        onComplete={() => setGlobalParticles(prev => ({ ...prev, trigger: false }))} 
+        onComplete={handleParticleComplete}
       />
       <FlashOverlay 
         isActive={globalFlash.active} 
         type={globalFlash.type} 
         customColor={globalFlash.color}
-        onComplete={() => setGlobalFlash(prev => ({ ...prev, active: false }))} 
+        onComplete={handleFlashComplete}
       />
       
       {/* Notifications and Overlays */}
@@ -1565,7 +1594,7 @@ const App: React.FC = () => {
                                 card={card} 
                                 index={idx}
                                 isHidden={gameState.phase === GamePhase.PlayerTurn && idx === 0}
-                                onCardClick={(c, e) => setSelectedCardForInfo({ card: c, position: { x: e.clientX, y: e.clientY } })}
+                                onCardClick={handleCardClick}
                             />
                         </div>
                     ))}
@@ -1700,7 +1729,7 @@ const App: React.FC = () => {
                                 <CardComponent 
                                     card={card} 
                                     index={idx}
-                                    onCardClick={(c, e) => setSelectedCardForInfo({ card: c, position: { x: e.clientX, y: e.clientY } })}
+                                    onCardClick={handleCardClick}
                                 />
                             </div>
                          ))}
