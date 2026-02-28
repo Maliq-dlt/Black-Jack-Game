@@ -184,6 +184,13 @@ const App: React.FC = () => {
   const [pendingAchievement, setPendingAchievement] = useState<Achievement | null>(null);
   const [selectedCardForInfo, setSelectedCardForInfo] = useState<{ card: Card; position: { x: number; y: number } } | null>(null);
 
+  // ⚡ Bolt: Extracted onCardClick into a stable useCallback reference.
+  // Since CardComponent is wrapped in React.memo(), passing this stable reference prevents
+  // the entire card hand from re-rendering every time App.tsx state changes (e.g. timer ticks or betting).
+  const handleCardClick = useCallback((card: Card, event: React.MouseEvent) => {
+    setSelectedCardForInfo({ card, position: { x: event.clientX, y: event.clientY } });
+  }, []);
+
   // Persist Meta-Progression and Stats
   useEffect(() => {
     localStorage.setItem('royale_blackjack_meta', JSON.stringify(gameState.meta));
@@ -1565,7 +1572,7 @@ const App: React.FC = () => {
                                 card={card} 
                                 index={idx}
                                 isHidden={gameState.phase === GamePhase.PlayerTurn && idx === 0}
-                                onCardClick={(c, e) => setSelectedCardForInfo({ card: c, position: { x: e.clientX, y: e.clientY } })}
+                                onCardClick={handleCardClick}
                             />
                         </div>
                     ))}
@@ -1700,7 +1707,7 @@ const App: React.FC = () => {
                                 <CardComponent 
                                     card={card} 
                                     index={idx}
-                                    onCardClick={(c, e) => setSelectedCardForInfo({ card: c, position: { x: e.clientX, y: e.clientY } })}
+                                    onCardClick={handleCardClick}
                                 />
                             </div>
                          ))}
