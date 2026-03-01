@@ -10,7 +10,8 @@ interface ChipProps {
   stackIndex?: number;
 }
 
-const Chip: React.FC<ChipProps> = ({ value, onClick, disabled, color, isStacked = false, stackIndex = 0 }) => {
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when parent App updates but props don't change.
+const Chip: React.FC<ChipProps> = React.memo(({ value, onClick, disabled, color, isStacked = false, stackIndex = 0 }) => {
   const colors = {
     red: { // Blood Bone Token
       bg: 'bg-gradient-to-b from-[#3d2e24] to-[#2a1f18]',
@@ -100,7 +101,9 @@ const Chip: React.FC<ChipProps> = ({ value, onClick, disabled, color, isStacked 
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-transparent via-[#d4a24c]/20 to-transparent rounded-full pointer-events-none" />
     </motion.button>
   );
-};
+});
+
+Chip.displayName = 'Chip';
 
 export default Chip;
 
