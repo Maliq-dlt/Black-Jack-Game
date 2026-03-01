@@ -187,7 +187,9 @@ const INTENSITY_MULTIPLIERS = {
  * - Configurable intensity
  * - Auto-cleanup
  */
-export const ParticleSystem: React.FC<ParticleSystemProps> = ({
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when parent App updates but props don't change.
+// This is critical since parent updates frequently, and we don't want to re-evaluate the heavy config or setup logic.
+export const ParticleSystem: React.FC<ParticleSystemProps> = React.memo(({
   type,
   trigger,
   origin = { x: 0.5, y: 0.5 },
@@ -395,7 +397,9 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
       </AnimatePresence>
     </div>
   );
-};
+});
+
+ParticleSystem.displayName = 'ParticleSystem';
 
 /**
  * ParticleBurst - One-shot particle burst at click position

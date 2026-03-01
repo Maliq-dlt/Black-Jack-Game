@@ -33,7 +33,8 @@ const FLASH_COLORS: Record<FlashType, string> = {
  *   onComplete={() => setShowFlash(false)} 
  * />
  */
-export const FlashOverlay: React.FC<FlashOverlayProps> = ({
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when parent App updates but props don't change.
+export const FlashOverlay: React.FC<FlashOverlayProps> = React.memo(({
   isActive,
   type = 'white',
   customColor,
@@ -83,7 +84,9 @@ export const FlashOverlay: React.FC<FlashOverlayProps> = ({
       )}
     </AnimatePresence>
   );
-};
+});
+
+FlashOverlay.displayName = 'FlashOverlay';
 
 /**
  * MultiFlashOverlay - Untuk efek flash berulang (seperti win celebration)

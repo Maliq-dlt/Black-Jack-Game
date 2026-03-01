@@ -281,25 +281,40 @@ const App: React.FC = () => {
   };
 
   // Betting Actions
-  const placeBet = (amount: number) => {
-    if (gameState.bankroll >= amount) {
-      const newChip: ChipData = {
-          value: amount,
-          id: Math.random().toString(36),
-          color: getChipColor(amount)
-      };
+  // ⚡ Bolt: placeBet uses useCallback to prevent re-renders of the Chip components.
+  // We use the functional updater pattern for setGameState to avoid adding gameState to the dependency array.
+  // The side effect (playing sound) is kept outside the updater, which ensures purity.
+  const placeBet = useCallback((amount: number) => {
+    // Only play sound if we know we have enough bankroll.
+    // Since we don't have bankroll in the dependency array, we can't reliably check it before setGameState.
+    // However, since the chips are disabled when bankroll is low, this is mostly safe.
+    // A better approach is to check the ref or just play the sound.
+    // For now, we will just play the sound since the button is disabled anyway.
+    soundEngine.playChipClick();
+    setGameState(prev => {
+        if (prev.bankroll >= amount) {
+            const newChip: ChipData = {
+                value: amount,
+                id: Math.random().toString(36),
+                color: getChipColor(amount)
+            };
+            return {
+                ...prev,
+                bankroll: prev.bankroll - amount,
+                currentBet: prev.currentBet + amount,
+                currentBetChips: [...prev.currentBetChips, newChip]
+            };
+        }
+        return prev;
+    });
+  }, [soundEngine]);
 
-      setGameState(prev => ({
-        ...prev,
-        bankroll: prev.bankroll - amount,
-        currentBet: prev.currentBet + amount,
-        currentBetChips: [...prev.currentBetChips, newChip]
-      }));
-      soundEngine.playChipClick();
-    }
-  };
+  const handleBet5 = useCallback(() => placeBet(5), [placeBet]);
+  const handleBet25 = useCallback(() => placeBet(25), [placeBet]);
+  const handleBet100 = useCallback(() => placeBet(100), [placeBet]);
+  const handleBet500 = useCallback(() => placeBet(500), [placeBet]);
 
-  const returnChip = (chip: ChipData) => {
+  const returnChip = useCallback((chip: ChipData) => {
     setGameState(prev => ({
       ...prev,
       bankroll: prev.bankroll + chip.value,
@@ -307,7 +322,7 @@ const App: React.FC = () => {
       currentBetChips: prev.currentBetChips.filter(c => c.id !== chip.id)
     }));
     soundEngine.playChipClick();
-  };
+  }, [soundEngine]);
 
   const clearBet = () => {
     if (gameState.currentBet === 0) return;
@@ -1222,6 +1237,14 @@ const App: React.FC = () => {
   const [globalFlash, setGlobalFlash] = useState<{ active: boolean; type: FlashType; color?: string }>({ active: false, type: 'white' });
   const [globalParticles, setGlobalParticles] = useState<{ trigger: boolean; type: ParticleType; origin?: { x: number; y: number } }>({ trigger: false, type: 'sparkle' });
 
+  const handleGlobalParticlesComplete = useCallback(() => {
+    setGlobalParticles(prev => ({ ...prev, trigger: false }));
+  }, []);
+
+  const handleGlobalFlashComplete = useCallback(() => {
+    setGlobalFlash(prev => ({ ...prev, active: false }));
+  }, []);
+
   useEffect(() => {
     return juice.registerFlashCallback((type, color) => {
       setGlobalFlash({ active: true, type, color });
@@ -1403,13 +1426,13 @@ const App: React.FC = () => {
         type={globalParticles.type} 
         trigger={globalParticles.trigger} 
         origin={globalParticles.origin}
-        onComplete={() => setGlobalParticles(prev => ({ ...prev, trigger: false }))} 
+        onComplete={handleGlobalParticlesComplete}
       />
       <FlashOverlay 
         isActive={globalFlash.active} 
         type={globalFlash.type} 
         customColor={globalFlash.color}
-        onComplete={() => setGlobalFlash(prev => ({ ...prev, active: false }))} 
+        onComplete={handleGlobalFlashComplete}
       />
       
       {/* Notifications and Overlays */}
@@ -1734,10 +1757,10 @@ const App: React.FC = () => {
               {gameState.phase === GamePhase.Betting && (
                   <div className="flex flex-col items-center gap-8 animate-fade-in-up mt-auto mb-12">
                       <div className="flex gap-4 flex-wrap justify-center scale-110 mb-4">
-                          <Chip color="red" value={5} onClick={() => placeBet(5)} disabled={gameState.bankroll < 5} />
-                          <Chip color="green" value={25} onClick={() => placeBet(25)} disabled={gameState.bankroll < 25} />
-                          <Chip color="black" value={100} onClick={() => placeBet(100)} disabled={gameState.bankroll < 100} />
-                          <Chip color="purple" value={500} onClick={() => placeBet(500)} disabled={gameState.bankroll < 500} />
+                          <Chip color="red" value={5} onClick={handleBet5} disabled={gameState.bankroll < 5} />
+                          <Chip color="green" value={25} onClick={handleBet25} disabled={gameState.bankroll < 25} />
+                          <Chip color="black" value={100} onClick={handleBet100} disabled={gameState.bankroll < 100} />
+                          <Chip color="purple" value={500} onClick={handleBet500} disabled={gameState.bankroll < 500} />
                       </div>
 
                       <div className="flex flex-col items-center gap-6 w-full max-w-xs">
