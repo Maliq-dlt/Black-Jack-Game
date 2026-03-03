@@ -281,33 +281,51 @@ const App: React.FC = () => {
   };
 
   // Betting Actions
-  const placeBet = (amount: number) => {
-    if (gameState.bankroll >= amount) {
+  const placeBet = useCallback((amount: number) => {
+    // ⚡ Bolt: Generate IDs and run side effects OUTSIDE the state updater
+    // to maintain purity and prevent double-execution in React Strict Mode
+    const newId = Math.random().toString(36);
+
+    setGameState(prev => {
+      if (prev.bankroll < amount) return prev;
+
       const newChip: ChipData = {
           value: amount,
-          id: Math.random().toString(36),
+          id: newId,
           color: getChipColor(amount)
       };
 
-      setGameState(prev => ({
+      return {
         ...prev,
         bankroll: prev.bankroll - amount,
         currentBet: prev.currentBet + amount,
         currentBetChips: [...prev.currentBetChips, newChip]
-      }));
-      soundEngine.playChipClick();
-    }
-  };
+      };
+    });
 
-  const returnChip = (chip: ChipData) => {
-    setGameState(prev => ({
-      ...prev,
-      bankroll: prev.bankroll + chip.value,
-      currentBet: prev.currentBet - chip.value,
-      currentBetChips: prev.currentBetChips.filter(c => c.id !== chip.id)
-    }));
+    // Play sound immediately when the bet is placed
     soundEngine.playChipClick();
-  };
+  }, [soundEngine]);
+
+  const returnChip = useCallback((chip: ChipData) => {
+    setGameState(prev => {
+      return {
+        ...prev,
+        bankroll: prev.bankroll + chip.value,
+        currentBet: prev.currentBet - chip.value,
+        currentBetChips: prev.currentBetChips.filter(c => c.id !== chip.id)
+      };
+    });
+
+    // Play sound immediately when chip is returned
+    soundEngine.playChipClick();
+  }, [soundEngine]);
+
+  // Pre-bound callbacks for Chip interactions to preserve referential equality
+  const handleBet5 = useCallback(() => placeBet(5), [placeBet]);
+  const handleBet25 = useCallback(() => placeBet(25), [placeBet]);
+  const handleBet100 = useCallback(() => placeBet(100), [placeBet]);
+  const handleBet500 = useCallback(() => placeBet(500), [placeBet]);
 
   const clearBet = () => {
     if (gameState.currentBet === 0) return;
@@ -1734,10 +1752,10 @@ const App: React.FC = () => {
               {gameState.phase === GamePhase.Betting && (
                   <div className="flex flex-col items-center gap-8 animate-fade-in-up mt-auto mb-12">
                       <div className="flex gap-4 flex-wrap justify-center scale-110 mb-4">
-                          <Chip color="red" value={5} onClick={() => placeBet(5)} disabled={gameState.bankroll < 5} />
-                          <Chip color="green" value={25} onClick={() => placeBet(25)} disabled={gameState.bankroll < 25} />
-                          <Chip color="black" value={100} onClick={() => placeBet(100)} disabled={gameState.bankroll < 100} />
-                          <Chip color="purple" value={500} onClick={() => placeBet(500)} disabled={gameState.bankroll < 500} />
+                          <Chip color="red" value={5} onClick={handleBet5} disabled={gameState.bankroll < 5} />
+                          <Chip color="green" value={25} onClick={handleBet25} disabled={gameState.bankroll < 25} />
+                          <Chip color="black" value={100} onClick={handleBet100} disabled={gameState.bankroll < 100} />
+                          <Chip color="purple" value={500} onClick={handleBet500} disabled={gameState.bankroll < 500} />
                       </div>
 
                       <div className="flex flex-col items-center gap-6 w-full max-w-xs">
