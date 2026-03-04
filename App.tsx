@@ -5,6 +5,7 @@ import { INITIAL_BANKROLL, BLACKJACK_PAYOUT, DEALER_STAND_ON, ANIMATION_DELAY } 
 import { createDeck, shuffleDeck, calculateScore, createHand } from './services/gameLogic';
 import { detectCombos } from './comboDetector';
 import { getDealerCommentary } from './services/geminiService';
+import { generateId } from './services/idUtils';
 import CardComponent from './components/CardComponent';
 import Chip from './components/Chip';
 import { ParticleEffect, AnimatedCounter, ResultBanner } from './components/ParticleEffect';
@@ -285,7 +286,7 @@ const App: React.FC = () => {
     if (gameState.bankroll >= amount) {
       const newChip: ChipData = {
           value: amount,
-          id: Math.random().toString(36),
+          id: generateId('chip'),
           color: getChipColor(amount)
       };
 
@@ -352,7 +353,7 @@ const App: React.FC = () => {
             specialCard = deck.splice(specialIndex, 1)[0];
         } else {
             specialCard = { 
-                id: `special-generated-${Date.now()}`, 
+                id: generateId('special-generated'),
                 suit: Suit.Spades, 
                 rank: targetRank, 
                 value: targetRank === Rank.Ace ? 11 : 7 
@@ -1077,7 +1078,7 @@ const App: React.FC = () => {
       setGameState(prev => ({
         ...prev,
         bankroll: prev.bankroll - item.cost,
-        inventory: [...prev.inventory, { ...item, id: Date.now().toString() }]
+        inventory: [...prev.inventory, { ...item, id: generateId('powerup') }]
       }));
       soundEngine.playChipClick();
     }

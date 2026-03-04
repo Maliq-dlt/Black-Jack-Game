@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { generateId } from '../services/idUtils';
 
 interface Particle {
-  id: number;
+  id: string;
   x: number;
   y: number;
   color: string;
@@ -33,7 +34,7 @@ export const ParticleEffect: React.FC<ParticleEffectProps> = ({ type, trigger, o
       for (let i = 0; i < count; i++) {
         const colors = COLORS[type];
         newParticles.push({
-          id: Date.now() + i,
+          id: generateId('particle'),
           x: Math.random() * 100,
           y: Math.random() * 20 - 10,
           color: colors[Math.floor(Math.random() * colors.length)],
