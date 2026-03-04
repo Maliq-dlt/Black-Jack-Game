@@ -1,5 +1,6 @@
 import { Card, Suit, Rank, Hand, WildCardType, EventCardType } from '../types';
 import { CARD_VALUES } from '../constants';
+import { generateId } from './idUtils';
 
 export const createDeck = (extraChance: number = 0, excludedRanks: string[] = []): Card[] => {
   const suits = [Suit.Hearts, Suit.Diamonds, Suit.Clubs, Suit.Spades];
@@ -29,7 +30,7 @@ export const createDeck = (extraChance: number = 0, excludedRanks: string[] = []
         suit,
         rank,
         value: CARD_VALUES[rank],
-        id: `${rank}-${suit}-${Math.random().toString(36).substr(2, 9)}`,
+        id: generateId(`${rank}-${suit}`),
         wildType,
         eventType
       });
@@ -67,7 +68,7 @@ export const calculateScore = (cards: Card[]): { score: number; isSoft: boolean 
 };
 
 export const createHand = (bet: number = 0): Hand => ({
-  id: `hand-${Math.random().toString(36).substr(2, 9)}`,
+  id: generateId('hand'),
   cards: [],
   bet,
   isActive: true,

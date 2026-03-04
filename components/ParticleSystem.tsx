@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { generateId } from '../services/idUtils';
 
 export type ParticleType = 
   | 'confetti' 
@@ -16,7 +17,7 @@ export type ParticleType =
   | 'snow';
 
 interface Particle {
-  id: number;
+  id: string | number;
   x: number;
   y: number;
   vx: number;
@@ -216,7 +217,7 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
       const speed = config.speedRange[0] + Math.random() * (config.speedRange[1] - config.speedRange[0]);
       
       newParticles.push({
-        id: Date.now() + i,
+        id: generateId('particle'),
         x: originX,
         y: originY,
         vx: Math.cos(angle) * speed,
