@@ -1,0 +1,3 @@
+## 2024-03-07 - React.memo Defeated by Inline Callbacks
+**Learning:** `CardComponent` was wrapped in `React.memo` to prevent re-renders, but it was being defeated because `App.tsx` passed an inline arrow function (`onCardClick={(c, e) => ...}`) on every render. This caused `CardComponent` to re-render for every single state change in `App.tsx` (like timer ticks, bankroll updates, or betting) despite its props logically remaining the same.
+**Action:** Always verify that components wrapped in `React.memo` are receiving stable references for their function props, typically by using `useCallback` in the parent component.
