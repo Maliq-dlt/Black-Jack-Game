@@ -1,16 +1,19 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 
 interface ChipProps {
   value: number;
-  onClick: () => void;
+  id?: string;
+  onClick: (value: number, id?: string) => void;
   disabled?: boolean;
   color: 'red' | 'blue' | 'green' | 'black' | 'purple';
   isStacked?: boolean;
   stackIndex?: number;
 }
 
-const Chip: React.FC<ChipProps> = ({ value, onClick, disabled, color, isStacked = false, stackIndex = 0 }) => {
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when parent state updates (e.g., betting, timers)
+// This significantly reduces render load during gameplay animations, as chips are rendered frequently in App.tsx.
+const Chip: React.FC<ChipProps> = memo(({ value, id, onClick, disabled, color, isStacked = false, stackIndex = 0 }) => {
   const colors = {
     red: { // Blood Bone Token
       bg: 'bg-gradient-to-b from-[#3d2e24] to-[#2a1f18]',
@@ -53,7 +56,7 @@ const Chip: React.FC<ChipProps> = ({ value, onClick, disabled, color, isStacked 
 
   return (
     <motion.button
-      onClick={onClick}
+      onClick={() => onClick(value, id)}
       disabled={disabled}
       initial={isStacked ? { scale: 0, y: 50 } : false}
       animate={isStacked ? { scale: 1, y: -stackIndex * 4 } : {}}
@@ -100,7 +103,7 @@ const Chip: React.FC<ChipProps> = ({ value, onClick, disabled, color, isStacked 
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-transparent via-[#d4a24c]/20 to-transparent rounded-full pointer-events-none" />
     </motion.button>
   );
-};
+});
 
 export default Chip;
 

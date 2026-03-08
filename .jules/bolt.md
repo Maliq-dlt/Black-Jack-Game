@@ -1,0 +1,3 @@
+## 2024-03-08 - Memoizing Frequent List Components
+**Learning:** In a heavily stateful component like `App.tsx`, frequently rendered sub-components within lists (such as the stacked `Chip` components during betting) cause massive re-render overhead if not properly memoized. Additionally, `React.memo` is completely ineffective unless the callback props (like `onClick`) passed to these list items are stabilized using `useCallback`.
+**Action:** Always wrap components rendered in high-volume arrays (like cards or chips) with `React.memo` AND wrap their corresponding handler functions in the parent component with `useCallback`.
