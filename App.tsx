@@ -259,7 +259,7 @@ const App: React.FC = () => {
     setGameState(prev => ({ ...prev, deck: createDeck() }));
   }, []);
 
-  const getChipColor = (value: number): 'red' | 'green' | 'black' | 'purple' => {
+  const getChipColor = useCallback((value: number): 'red' | 'green' | 'black' | 'purple' => {
       switch (value) {
           case 5: return 'red';
           case 25: return 'green';
@@ -267,7 +267,7 @@ const App: React.FC = () => {
           case 500: return 'purple';
           default: return 'red';
       }
-  };
+  }, []);
 
   // Update Scores Helper
   const updateHandScore = (hand: Hand): Hand => {
@@ -280,46 +280,70 @@ const App: React.FC = () => {
     };
   };
 
+  // Keep track of latest state in a ref specifically for pure callbacks that need to check logic
+  // without adding `gameState` to their dependency array and breaking memoization.
+  const gameStateRef = useRef(gameState);
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
+
   // Betting Actions
-  const placeBet = (amount: number) => {
-    if (gameState.bankroll >= amount) {
+  // ⚡ Bolt: Wrapped placeBet, returnChip, and clearBet in useCallback to prevent new function instances
+  // on every App.tsx render. This is critical for the React.memo in the Chip component to work,
+  // preventing unnecessary re-renders of the entire chip stack when betting.
+  const placeBet = useCallback((amount: number) => {
+    // Generate unique ID and play sound outside of state updater to keep it pure.
+    // Use gameStateRef to safely check validity before triggering side effects.
+    if (gameStateRef.current.bankroll < amount || gameStateRef.current.phase !== GamePhase.Betting) return;
+
+    soundEngine.playChipClick();
+    const newChipId = crypto.randomUUID();
+
+    setGameState(prev => {
       const newChip: ChipData = {
           value: amount,
-          id: Math.random().toString(36),
+          id: newChipId,
           color: getChipColor(amount)
       };
 
-      setGameState(prev => ({
+      return {
         ...prev,
         bankroll: prev.bankroll - amount,
         currentBet: prev.currentBet + amount,
         currentBetChips: [...prev.currentBetChips, newChip]
-      }));
-      soundEngine.playChipClick();
-    }
-  };
+      };
+    });
+  }, [getChipColor]);
 
-  const returnChip = (chip: ChipData) => {
-    setGameState(prev => ({
-      ...prev,
-      bankroll: prev.bankroll + chip.value,
-      currentBet: prev.currentBet - chip.value,
-      currentBetChips: prev.currentBetChips.filter(c => c.id !== chip.id)
-    }));
+  const returnChip = useCallback((value: number, id?: string) => {
+    if (gameStateRef.current.phase !== GamePhase.Betting || !id) return;
+
     soundEngine.playChipClick();
-  };
 
-  const clearBet = () => {
-    if (gameState.currentBet === 0) return;
+    setGameState(prev => {
+      return {
+        ...prev,
+        bankroll: prev.bankroll + value,
+        currentBet: prev.currentBet - value,
+        currentBetChips: prev.currentBetChips.filter(c => c.id !== id)
+      };
+    });
+  }, []);
+
+  const clearBet = useCallback(() => {
+    if (gameStateRef.current.currentBet === 0 || gameStateRef.current.phase !== GamePhase.Betting) return;
     
-    setGameState(prev => ({
-      ...prev,
-      bankroll: prev.bankroll + prev.currentBet,
-      currentBet: 0,
-      currentBetChips: []
-    }));
     soundEngine.playChipClick();
-  };
+
+    setGameState(prev => {
+      return {
+        ...prev,
+        bankroll: prev.bankroll + prev.currentBet,
+        currentBet: 0,
+        currentBetChips: []
+      };
+    });
+  }, []);
 
   const dealGame = () => {
     if (gameState.currentBet === 0) return;
@@ -1615,7 +1639,7 @@ const App: React.FC = () => {
                                     pointerEvents: 'auto'
                                 }}
                             >
-                                <Chip color={chip.color} value={chip.value} onClick={() => returnChip(chip)} />
+                                <Chip id={chip.id} color={chip.color} value={chip.value} onClick={returnChip} />
                             </motion.div>
                         ))}
                     </AnimatePresence>
@@ -1734,10 +1758,10 @@ const App: React.FC = () => {
               {gameState.phase === GamePhase.Betting && (
                   <div className="flex flex-col items-center gap-8 animate-fade-in-up mt-auto mb-12">
                       <div className="flex gap-4 flex-wrap justify-center scale-110 mb-4">
-                          <Chip color="red" value={5} onClick={() => placeBet(5)} disabled={gameState.bankroll < 5} />
-                          <Chip color="green" value={25} onClick={() => placeBet(25)} disabled={gameState.bankroll < 25} />
-                          <Chip color="black" value={100} onClick={() => placeBet(100)} disabled={gameState.bankroll < 100} />
-                          <Chip color="purple" value={500} onClick={() => placeBet(500)} disabled={gameState.bankroll < 500} />
+                          <Chip color="red" value={5} onClick={placeBet} disabled={gameState.bankroll < 5} />
+                          <Chip color="green" value={25} onClick={placeBet} disabled={gameState.bankroll < 25} />
+                          <Chip color="black" value={100} onClick={placeBet} disabled={gameState.bankroll < 100} />
+                          <Chip color="purple" value={500} onClick={placeBet} disabled={gameState.bankroll < 500} />
                       </div>
 
                       <div className="flex flex-col items-center gap-6 w-full max-w-xs">
