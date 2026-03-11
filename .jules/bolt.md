@@ -1,0 +1,3 @@
+## 2025-03-11 - React Strict Mode & State Updater Anti-Patterns
+**Learning:** When refactoring heavily-used components (like `<Chip>`) to use `React.memo` and `useCallback`, it's easy to accidentally move impure operations (like audio playback or `crypto.randomUUID()`) inside `setGameState(prev => ...)` pure updater functions. Because React may call updater functions multiple times in Strict Mode, this causes unintended duplicate side effects (e.g., sound playing twice or IDs shifting unexpectedly).
+**Action:** Always keep side effects (audio, RNG, local storage sync) inside the event handler body but OUTSIDE the functional state updaters. `setGameState(prev => ...)` must remain 100% pure.
