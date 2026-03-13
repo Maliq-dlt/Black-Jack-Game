@@ -1,0 +1,3 @@
+## 2024-05-19 - [Avoid useState in requestAnimationFrame]
+**Learning:** `useState` setters within high-frequency loops like `requestAnimationFrame` cause the entire component to re-render up to 60 times a second, creating massive performance overhead, especially in animations like `NumberCounter`.
+**Action:** Always use direct DOM manipulation via `useRef` (e.g., `spanRef.current.textContent = value`) inside `requestAnimationFrame` to update text values or properties without triggering React re-renders.
