@@ -37,7 +37,7 @@ export const NumberCounter: React.FC<NumberCounterProps> = ({
   showSign = false,
   decimals = 0
 }) => {
-  const [displayValue, setDisplayValue] = useState(value);
+  const displayRef = useRef<HTMLSpanElement>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const prevValueRef = useRef(value);
   const animationRef = useRef<number | null>(null);
@@ -101,12 +101,16 @@ export const NumberCounter: React.FC<NumberCounterProps> = ({
       const easeOutExpo = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
       const currentValue = startValue + diff * easeOutExpo;
 
-      setDisplayValue(currentValue);
+      if (displayRef.current) {
+        displayRef.current.textContent = formatNumber(currentValue);
+      }
 
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate);
       } else {
-        setDisplayValue(endValue);
+        if (displayRef.current) {
+          displayRef.current.textContent = formatNumber(endValue);
+        }
         setIsAnimating(false);
         prevValueRef.current = endValue;
       }
@@ -131,6 +135,7 @@ export const NumberCounter: React.FC<NumberCounterProps> = ({
 
   return (
     <motion.span
+      ref={displayRef}
       className={`inline-block font-mono font-bold ${sizeClasses[size]} ${getColor()} ${className}`}
       animate={isAnimating ? {
         scale: [1, 1.1, 1],
@@ -142,7 +147,7 @@ export const NumberCounter: React.FC<NumberCounterProps> = ({
       } : {}}
       transition={{ duration: 0.3 }}
     >
-      {formatNumber(displayValue)}
+      {formatNumber(value)}
     </motion.span>
   );
 };
