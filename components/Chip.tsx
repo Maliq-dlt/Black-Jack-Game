@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 
 interface ChipProps {
@@ -10,7 +10,9 @@ interface ChipProps {
   stackIndex?: number;
 }
 
-const Chip: React.FC<ChipProps> = ({ value, onClick, disabled, color, isStacked = false, stackIndex = 0 }) => {
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when parent state updates
+// but chip props remain unchanged, improving performance during betting phase.
+const Chip: React.FC<ChipProps> = memo(({ value, onClick, disabled, color, isStacked = false, stackIndex = 0 }) => {
   const colors = {
     red: { // Blood Bone Token
       bg: 'bg-gradient-to-b from-[#3d2e24] to-[#2a1f18]',
@@ -100,7 +102,7 @@ const Chip: React.FC<ChipProps> = ({ value, onClick, disabled, color, isStacked 
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-transparent via-[#d4a24c]/20 to-transparent rounded-full pointer-events-none" />
     </motion.button>
   );
-};
+});
 
 export default Chip;
 
