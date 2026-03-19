@@ -1,0 +1,3 @@
+## 2026-03-19 - [Combo Detection Optimization]
+**Learning:** In highly-frequent evaluation functions like `detectCombos` (called every hand result), breaking out conditions like `hasPair`, `hasThreeOfAKind`, `isSuited`, and `isSequential` into independent array iterations (e.g. `map`, `some`, `every`) introduces noticeable overhead compared to a unified `O(N)` loop. Using object allocations like `Record<string, number>` or nested O(N^2) loops on very small arrays (N <= 7 for Blackjack hands) is significantly faster than using JS Map or repeatedly iterating.
+**Action:** When writing rule evaluation systems on small, fixed-size data (like hands of cards), calculate frequencies and properties in a single pass instead of writing clean but slow independent helper functions.
