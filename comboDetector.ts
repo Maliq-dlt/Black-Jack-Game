@@ -122,6 +122,11 @@ function getCardValue(card: Card): number {
 /**
  * Detect all combos in a hand
  */
+// ⚡ Bolt: Optimized detectCombos to use a single O(N) pass for collecting
+// suit/rank frequencies and numeric values, removing redundant array traversals.
+// Previously, detectCombos called hasPair, hasThreeOfAKind, isSuited, and isSequential
+// separately, causing multiple iterations over the playerCards array. This optimization
+// consolidates all checks into a single iteration, using a Map and tracking flags.
 export function detectCombos(
   playerCards: Card[], 
   handValue: number,
@@ -139,25 +144,53 @@ export function detectCombos(
   if (handValue === 21 && !isBlackjack) {
     combos.push(ComboType.Perfect21);
   }
-  
-  // Pair detection
-  if (hasPair(playerCards)) {
-    combos.push(ComboType.Pair);
-  }
-  
-  // Three of a kind
-  if (hasThreeOfAKind(playerCards)) {
-    combos.push(ComboType.ThreeOfAKind);
-  }
-  
-  // Suited hand
-  if (isSuited(playerCards)) {
-    combos.push(ComboType.Suited);
-  }
-  
-  // Sequential
-  if (isSequential(playerCards)) {
-    combos.push(ComboType.Sequential);
+
+  // --- O(N) Single Pass for Hand Analysis ---
+  const len = playerCards.length;
+  if (len >= 2) {
+    let hasPair = false;
+    let hasThree = false;
+    let firstSuit = playerCards[0].suit;
+    let isSuited = true;
+
+    // Fast path: manual hash maps instead of Object.values which adds overhead
+    const rankCounts = new Map<string, number>();
+    const numericValues: number[] = new Array(len);
+
+    for (let i = 0; i < len; i++) {
+      const card = playerCards[i];
+
+      // Rank tracking
+      const count = (rankCounts.get(card.rank) || 0) + 1;
+      rankCounts.set(card.rank, count);
+      if (count === 2) hasPair = true;
+      if (count === 3) hasThree = true;
+
+      // Suit tracking
+      if (isSuited && card.suit !== firstSuit) {
+        isSuited = false;
+      }
+
+      // Numeric values for sequence
+      numericValues[i] = getCardValue(card);
+    }
+
+    if (hasPair) combos.push(ComboType.Pair);
+    if (hasThree) combos.push(ComboType.ThreeOfAKind);
+    if (isSuited) combos.push(ComboType.Suited);
+
+    // Sequential
+    if (len >= 3) {
+      numericValues.sort((a, b) => a - b);
+      let isSeq = true;
+      for (let i = 1; i < len; i++) {
+        if (numericValues[i] !== numericValues[i - 1] + 1) {
+          isSeq = false;
+          break;
+        }
+      }
+      if (isSeq) combos.push(ComboType.Sequential);
+    }
   }
   
   // Five card charlie
@@ -181,45 +214,6 @@ export function detectCombos(
   }
   
   return combos;
-}
-
-/**
- * Check for pair
- */
-function hasPair(cards: Card[]): boolean {
-  const ranks = cards.map(c => c.rank);
-  return ranks.some((r, i) => ranks.indexOf(r) !== i);
-}
-
-/**
- * Check for three of a kind
- */
-function hasThreeOfAKind(cards: Card[]): boolean {
-  const rankCounts: Record<string, number> = {};
-  cards.forEach(c => {
-    rankCounts[c.rank] = (rankCounts[c.rank] || 0) + 1;
-  });
-  return Object.values(rankCounts).some(count => count >= 3);
-}
-
-/**
- * Check if all cards are same suit
- */
-function isSuited(cards: Card[]): boolean {
-  if (cards.length < 2) return false;
-  return cards.every(c => c.suit === cards[0].suit);
-}
-
-/**
- * Check if cards form a sequence
- */
-function isSequential(cards: Card[]): boolean {
-  if (cards.length < 3) return false;
-  const values = cards.map(getCardValue).sort((a, b) => a - b);
-  for (let i = 1; i < values.length; i++) {
-    if (values[i] !== values[i - 1] + 1) return false;
-  }
-  return true;
 }
 
 // ============================================

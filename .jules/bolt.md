@@ -1,0 +1,3 @@
+## 2024-05-18 - [O(N) Combo Detection]
+**Learning:** In highly frequent evaluations like detecting poker hand combinations, chaining array iteration methods (`map`, `filter`, `some`, `every`) is clean but creates an O(N * M) bottleneck, where M is the number of methods called. A single O(N) pass mapping variables manually via simple for-loops significantly improves performance.
+**Action:** Consolidate array scans. Use Maps or simple variables initialized upfront to keep track of state in one loop rather than relying on multiple array methods. Also be aware that the order in which conditions push to an array can change, which may cause unexpected test failures.
