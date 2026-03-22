@@ -739,23 +739,35 @@ const App: React.FC = () => {
 
           // --- Combo Detection ---
           if (result !== GameResult.Loss && result !== GameResult.Bust) {
+              // ⚡ Bolt: Consolidated combo array iteration.
+              // Instead of multiple O(N) array scans (`map`, `filter`, `includes`), we calculate everything in O(N).
               const suitCounts: Record<string, number> = {};
-              hand.cards.forEach(c => {
-                  suitCounts[c.suit] = (suitCounts[c.suit] || 0) + 1;
-              });
-
               const counts: Record<string, number> = {};
-              hand.cards.forEach(c => {
+
+              for (let i = 0; i < hand.cards.length; i++) {
+                  const c = hand.cards[i];
+                  suitCounts[c.suit] = (suitCounts[c.suit] || 0) + 1;
                   counts[c.rank] = (counts[c.rank] || 0) + 1;
-              });
+              }
+
+              let pairCount = 0;
+              let hasThreeKind = false;
+              let hasFourKind = false;
+
               const freq = Object.values(counts);
+              for (let i = 0; i < freq.length; i++) {
+                  const f = freq[i];
+                  if (f === 2) pairCount++;
+                  else if (f === 3) hasThreeKind = true;
+                  else if (f === 4) hasFourKind = true;
+              }
 
               combo.checkHandCombos({
-                  hasPair: freq.includes(2),
-                  hasTwoPair: freq.filter(c => c === 2).length >= 2,
-                  hasThreeKind: freq.includes(3),
-                  hasFourKind: freq.includes(4),
-                  hasFullHouse: freq.includes(3) && freq.includes(2),
+                  hasPair: pairCount > 0,
+                  hasTwoPair: pairCount >= 2,
+                  hasThreeKind: hasThreeKind,
+                  hasFourKind: hasFourKind,
+                  hasFullHouse: hasThreeKind && pairCount > 0,
                   hasBlackjack: hand.isBlackjack,
                   suitCount: suitCounts
               });

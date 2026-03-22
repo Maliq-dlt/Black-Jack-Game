@@ -1,0 +1,3 @@
+## 2024-05-18 - [Optimization] Array Passes in Frequent Render Loops
+**Learning:** Found multiple instances where array iteration methods (`map`, `filter`, `includes`, `indexOf`) were being chained for the same array data points (like hand card states and combos) within frequent or tight operations (e.g. `detectCombos` during betting and evaluating rounds). Since cards and combos update frequently, chaining leads to hidden O(N * M) performance hits and extra allocations.
+**Action:** Replaced chained iterators with single-pass consolidated logic using standard variables and maps to track frequencies in one O(N) loop when parsing hand or combos elements, avoiding excess memory allocation and saving cycles.

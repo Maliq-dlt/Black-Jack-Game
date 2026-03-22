@@ -130,6 +130,47 @@ export function detectCombos(
 ): ComboType[] {
   const combos: ComboType[] = [];
   
+  // ⚡ Bolt: Single pass hand evaluation to optimize O(N*M) down to O(N).
+  // Calculate pairs, triples, suitedness, and build sequence data in one iteration.
+  let isSuited = playerCards.length >= 2;
+  const rankCounts: Record<string, number> = {};
+  const cardValues: number[] = [];
+  const firstSuit = playerCards.length > 0 ? playerCards[0].suit : null;
+
+  let hasPair = false;
+  let hasThreeOfAKind = false;
+
+  for (let i = 0; i < playerCards.length; i++) {
+    const card = playerCards[i];
+
+    // Check suited
+    if (isSuited && card.suit !== firstSuit) {
+      isSuited = false;
+    }
+
+    // Check frequencies (Pairs, Triples)
+    const count = (rankCounts[card.rank] || 0) + 1;
+    rankCounts[card.rank] = count;
+    if (count === 2) hasPair = true;
+    if (count === 3) hasThreeOfAKind = true;
+
+    // Collect for sequential
+    cardValues.push(getCardValue(card));
+  }
+
+  // Check sequential (requires sort, but now we only sort the numbers, not N maps first)
+  let isSequential = false;
+  if (playerCards.length >= 3) {
+      cardValues.sort((a, b) => a - b);
+      isSequential = true;
+      for (let i = 1; i < cardValues.length; i++) {
+        if (cardValues[i] !== cardValues[i - 1] + 1) {
+            isSequential = false;
+            break;
+        }
+      }
+  }
+
   // Blackjack
   if (isBlackjack && playerCards.length === 2) {
     combos.push(ComboType.Blackjack);
@@ -141,22 +182,22 @@ export function detectCombos(
   }
   
   // Pair detection
-  if (hasPair(playerCards)) {
+  if (hasPair) {
     combos.push(ComboType.Pair);
   }
   
   // Three of a kind
-  if (hasThreeOfAKind(playerCards)) {
+  if (hasThreeOfAKind) {
     combos.push(ComboType.ThreeOfAKind);
   }
   
   // Suited hand
-  if (isSuited(playerCards)) {
+  if (isSuited) {
     combos.push(ComboType.Suited);
   }
   
   // Sequential
-  if (isSequential(playerCards)) {
+  if (isSequential) {
     combos.push(ComboType.Sequential);
   }
   
@@ -181,45 +222,6 @@ export function detectCombos(
   }
   
   return combos;
-}
-
-/**
- * Check for pair
- */
-function hasPair(cards: Card[]): boolean {
-  const ranks = cards.map(c => c.rank);
-  return ranks.some((r, i) => ranks.indexOf(r) !== i);
-}
-
-/**
- * Check for three of a kind
- */
-function hasThreeOfAKind(cards: Card[]): boolean {
-  const rankCounts: Record<string, number> = {};
-  cards.forEach(c => {
-    rankCounts[c.rank] = (rankCounts[c.rank] || 0) + 1;
-  });
-  return Object.values(rankCounts).some(count => count >= 3);
-}
-
-/**
- * Check if all cards are same suit
- */
-function isSuited(cards: Card[]): boolean {
-  if (cards.length < 2) return false;
-  return cards.every(c => c.suit === cards[0].suit);
-}
-
-/**
- * Check if cards form a sequence
- */
-function isSequential(cards: Card[]): boolean {
-  if (cards.length < 3) return false;
-  const values = cards.map(getCardValue).sort((a, b) => a - b);
-  for (let i = 1; i < values.length; i++) {
-    if (values[i] !== values[i - 1] + 1) return false;
-  }
-  return true;
 }
 
 // ============================================
