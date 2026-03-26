@@ -1,0 +1,3 @@
+## 2025-05-20 - [O(N*M) bottlenecks in React Callbacks]
+**Learning:** Using `Array.some()` or `Array.filter()` repeatedly within frequent game-loop callbacks (like evaluating hands or checking achievements in `App.tsx`) creates an unnecessary O(N*M) bottleneck as the user's collection grows. This codebase pattern is prone to being overlooked because it looks "cleaner" than manual tracking.
+**Action:** When evaluating collections against a player's growing inventory/achievements/artifacts during high-frequency updates, pre-compute a `Set` for O(1) lookups instead of executing repeated array scans.
