@@ -209,10 +209,15 @@ const App: React.FC = () => {
   // --- Achievement Checker ---
   const checkAchievements = useCallback((stats: LifetimeStats, isWin: boolean, isBJ: boolean, betAmount: number, isAnyBoss: boolean) => {
     const currentAchievements = [...stats.achievements];
+    // ⚡ Bolt: Using a Set for achievement lookup changes the N*M array scans into an O(N) lookup,
+    // reducing evaluation time for frequent game state changes when checking all conditions.
+    const unlockedTypes = new Set(currentAchievements.map(a => a.type));
+
     const unlockAchievement = (type: AchievementType) => {
-      if (!currentAchievements.some(a => a.type === type)) {
+      if (!unlockedTypes.has(type)) {
         const newAch = createAchievement(type);
         currentAchievements.push(newAch);
+        unlockedTypes.add(type);
         setPendingAchievement(newAch);
       }
     };
