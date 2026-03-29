@@ -674,6 +674,12 @@ const App: React.FC = () => {
           }
       }
 
+      // Pre-calculate artifact presence to avoid O(N*M) redundant checks per hand evaluation
+      const activeArtifactTypes = new Set(gameState.artifacts.map(a => a.type));
+      const hasGoldenTouch = activeArtifactTypes.has(ArtifactType.GoldenTouch);
+      const hasLuckyCoin = activeArtifactTypes.has(ArtifactType.LuckyCoin);
+      const hasVampiricGamble = activeArtifactTypes.has(ArtifactType.VampiricGamble);
+
       const hands = gameState.playerHands.map(hand => {
           let result = GameResult.Loss;
           let winAmount = 0;
@@ -702,8 +708,6 @@ const App: React.FC = () => {
                   winAmount = hand.bet * 2;
               } else if (hand.score > dealerScore) {              // Win
                   result = GameResult.Win;
-                  const hasGoldenTouch = gameState.artifacts.some(a => a.type === ArtifactType.GoldenTouch);
-                  const hasLuckyCoin = gameState.artifacts.some(a => a.type === ArtifactType.LuckyCoin);
                   const bonusMultiplier = (hasGoldenTouch ? 1.1 : 1.0) * (hand.isGilded ? 1.5 : 1.0) * (hasLuckyCoin ? 1.2 : 1.0);
                   winAmount = Math.floor(hand.bet * 2 * bonusMultiplier);
                   if (hasGoldenTouch || hand.isGilded || hasLuckyCoin) {
@@ -712,7 +716,6 @@ const App: React.FC = () => {
                   }
               } else if (hand.score === dealerScore) {
                   const bossWinsPush = gameState.activeBossTrait === BossTrait.DealerWinsPush;
-                  const hasVampiricGamble = gameState.artifacts.some(a => a.type === ArtifactType.VampiricGamble);
                   
                   if (bossWinsPush) {
                       result = GameResult.Loss;
@@ -727,7 +730,6 @@ const App: React.FC = () => {
                   }
               } else {
                   result = GameResult.Loss;
-                  const hasVampiricGamble = gameState.artifacts.some(a => a.type === ArtifactType.VampiricGamble);
                   if (hasVampiricGamble) {
                       winAmount = -Math.floor(hand.bet * 0.1); // Vampiric penalty on top of losing bet (though technically bankroll is already deducted by bet)
                       // We'll deduct another 10% of the bet from bankroll
