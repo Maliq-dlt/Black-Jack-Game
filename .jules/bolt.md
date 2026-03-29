@@ -1,0 +1,3 @@
+## 2026-03-29 - Pre-calculated artifact presence during hand evaluations
+**Learning:** Found a performance bottleneck in `App.tsx` where `gameState.artifacts.some(...)` was called repeatedly inside a `gameState.playerHands.map` loop during hand evaluations (the `evaluateGame` function). While the loop is small (usually 1-4 hands), iterating the entire artifact array repeatedly is an O(N*M) anti-pattern for frequent operations.
+**Action:** When filtering or checking a collection of items against a player's inventory or active status, always pre-calculate a `Set` of the active item types (or specific booleans) *before* entering the iteration loop. This reduces the complexity to O(N+M) and is much faster for the game loop.
