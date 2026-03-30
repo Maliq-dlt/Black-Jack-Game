@@ -327,9 +327,11 @@ const App: React.FC = () => {
     let deck = [...gameState.deck];
     if (deck.length < 15) deck = createDeck(gameState.meta.upgrades.increasedWildChance, gameState.removedRanks); // Reshuffle if low
     
+    const activeArtifactTypes = new Set(gameState.artifacts.map(a => a.type));
+
     // Lucky Seven Artifact Logic
-    const hasLuckySeven = gameState.artifacts.some(a => a.type === ArtifactType.LuckySeven);
-    const hasAceInTheHole = gameState.artifacts.some(a => a.type === ArtifactType.AceInTheHole);
+    const hasLuckySeven = activeArtifactTypes.has(ArtifactType.LuckySeven);
+    const hasAceInTheHole = activeArtifactTypes.has(ArtifactType.AceInTheHole);
     let playerOneCards: Card[] = [];
     let dealerCards: Card[] = [];
     // Boss Round Detection
@@ -661,6 +663,7 @@ const App: React.FC = () => {
   }, [gameState.phase]);
 
   const evaluateGame = async () => {
+      const activeArtifactTypes = new Set(gameState.artifacts.map(a => a.type));
       let totalWinnings = 0;
       let dealerScore = gameState.dealerHand.score;
       const dealerBusted = dealerScore > 21;
@@ -702,8 +705,8 @@ const App: React.FC = () => {
                   winAmount = hand.bet * 2;
               } else if (hand.score > dealerScore) {              // Win
                   result = GameResult.Win;
-                  const hasGoldenTouch = gameState.artifacts.some(a => a.type === ArtifactType.GoldenTouch);
-                  const hasLuckyCoin = gameState.artifacts.some(a => a.type === ArtifactType.LuckyCoin);
+                  const hasGoldenTouch = activeArtifactTypes.has(ArtifactType.GoldenTouch);
+                  const hasLuckyCoin = activeArtifactTypes.has(ArtifactType.LuckyCoin);
                   const bonusMultiplier = (hasGoldenTouch ? 1.1 : 1.0) * (hand.isGilded ? 1.5 : 1.0) * (hasLuckyCoin ? 1.2 : 1.0);
                   winAmount = Math.floor(hand.bet * 2 * bonusMultiplier);
                   if (hasGoldenTouch || hand.isGilded || hasLuckyCoin) {
@@ -712,7 +715,7 @@ const App: React.FC = () => {
                   }
               } else if (hand.score === dealerScore) {
                   const bossWinsPush = gameState.activeBossTrait === BossTrait.DealerWinsPush;
-                  const hasVampiricGamble = gameState.artifacts.some(a => a.type === ArtifactType.VampiricGamble);
+                  const hasVampiricGamble = activeArtifactTypes.has(ArtifactType.VampiricGamble);
                   
                   if (bossWinsPush) {
                       result = GameResult.Loss;
@@ -727,7 +730,7 @@ const App: React.FC = () => {
                   }
               } else {
                   result = GameResult.Loss;
-                  const hasVampiricGamble = gameState.artifacts.some(a => a.type === ArtifactType.VampiricGamble);
+                  const hasVampiricGamble = activeArtifactTypes.has(ArtifactType.VampiricGamble);
                   if (hasVampiricGamble) {
                       winAmount = -Math.floor(hand.bet * 0.1); // Vampiric penalty on top of losing bet (though technically bankroll is already deducted by bet)
                       // We'll deduct another 10% of the bet from bankroll
@@ -816,7 +819,7 @@ const App: React.FC = () => {
                   { id: 'rare-1', type: ArtifactType.LuckyCoin, name: 'LUCKY COIN', description: 'Wins pay 1.2x instead of 2x', cost: 0 },
                   { id: 'rare-2', type: ArtifactType.AceInTheHole, name: 'ACE IN THE HOLE', description: 'Start hand with an Ace', cost: 0 },
                   { id: 'rare-3', type: ArtifactType.VampiricGamble, name: 'VAMPIRIC GAMBLE', description: '+$200 on Pushes, -10% Bankroll on Losses', cost: 0 }
-              ].filter(a => !gameState.artifacts.some(owned => owned.type === a.type));
+              ].filter(a => !activeArtifactTypes.has(a.type));
 
               if (allRare.length > 0) {
                   setGameState(prev => ({
