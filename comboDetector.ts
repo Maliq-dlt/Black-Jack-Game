@@ -226,6 +226,11 @@ function isSequential(cards: Card[]): boolean {
 // SCORING CHAIN FUNCTIONS
 // ============================================
 
+// Precompute a map for O(1) lookups instead of O(N) Array.find calls
+const COMBO_BONUS_MAP = new Map<ComboType, ComboBonus>(
+  COMBO_BONUSES.map(bonus => [bonus.type, bonus])
+);
+
 /**
  * Calculate total bonus from combos
  */
@@ -233,13 +238,14 @@ export function calculateComboBonus(combos: ComboType[]): { mult: number; gold: 
   let mult = 0;
   let gold = 0;
   
-  combos.forEach(combo => {
-    const bonus = COMBO_BONUSES.find(b => b.type === combo);
+  // ⚡ Bolt: Using O(1) Map lookup instead of O(N) Array.find inside a loop
+  for (let i = 0; i < combos.length; i++) {
+    const bonus = COMBO_BONUS_MAP.get(combos[i]);
     if (bonus) {
       mult += bonus.multBonus;
       gold += bonus.goldBonus;
     }
-  });
+  }
   
   return { mult, gold };
 }
@@ -294,7 +300,8 @@ export function updateScoringChain(
  * Get combo info for display
  */
 export function getComboInfo(type: ComboType): ComboBonus | undefined {
-  return COMBO_BONUSES.find(b => b.type === type);
+  // ⚡ Bolt: Using O(1) Map lookup instead of O(N) Array.find
+  return COMBO_BONUS_MAP.get(type);
 }
 
 // ============================================
