@@ -748,14 +748,27 @@ const App: React.FC = () => {
               hand.cards.forEach(c => {
                   counts[c.rank] = (counts[c.rank] || 0) + 1;
               });
-              const freq = Object.values(counts);
+
+              // ⚡ BOLT OPTIMIZATION:
+              // Consolidated multiple array iterations (filter, includes) over rank frequencies
+              // into a single O(N) pass, saving ~2 array allocations and redundant iterations per hand evaluation.
+              let pairs = 0;
+              let hasThreeKind = false;
+              let hasFourKind = false;
+
+              for (const key in counts) {
+                  const count = counts[key];
+                  if (count === 2) pairs++;
+                  else if (count === 3) hasThreeKind = true;
+                  else if (count === 4) hasFourKind = true;
+              }
 
               combo.checkHandCombos({
-                  hasPair: freq.includes(2),
-                  hasTwoPair: freq.filter(c => c === 2).length >= 2,
-                  hasThreeKind: freq.includes(3),
-                  hasFourKind: freq.includes(4),
-                  hasFullHouse: freq.includes(3) && freq.includes(2),
+                  hasPair: pairs > 0,
+                  hasTwoPair: pairs >= 2,
+                  hasThreeKind,
+                  hasFourKind,
+                  hasFullHouse: hasThreeKind && pairs > 0,
                   hasBlackjack: hand.isBlackjack,
                   suitCount: suitCounts
               });
