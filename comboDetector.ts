@@ -100,6 +100,11 @@ export const COMBO_BONUSES: ComboBonus[] = [
   },
 ];
 
+// ⚡ Bolt: Precomputed Map for O(1) lookups during frequent combo evaluations
+export const COMBO_BONUSES_MAP = new Map<ComboType, ComboBonus>(
+  COMBO_BONUSES.map(bonus => [bonus.type, bonus])
+);
+
 // ============================================
 // RANK VALUE HELPERS
 // ============================================
@@ -234,7 +239,8 @@ export function calculateComboBonus(combos: ComboType[]): { mult: number; gold: 
   let gold = 0;
   
   combos.forEach(combo => {
-    const bonus = COMBO_BONUSES.find(b => b.type === combo);
+    // ⚡ Bolt: Replaced O(N) Array.find with O(1) Map.get for faster lookups
+    const bonus = COMBO_BONUSES_MAP.get(combo);
     if (bonus) {
       mult += bonus.multBonus;
       gold += bonus.goldBonus;
@@ -294,7 +300,8 @@ export function updateScoringChain(
  * Get combo info for display
  */
 export function getComboInfo(type: ComboType): ComboBonus | undefined {
-  return COMBO_BONUSES.find(b => b.type === type);
+  // ⚡ Bolt: Replaced O(N) Array.find with O(1) Map.get
+  return COMBO_BONUSES_MAP.get(type);
 }
 
 // ============================================
