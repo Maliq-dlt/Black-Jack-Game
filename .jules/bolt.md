@@ -1,0 +1,3 @@
+## 2025-02-14 - [O(N) vs O(M*N) array filter performance pattern]
+**Learning:** In highly frequent evaluations (such as array maps running on every render loop for deck viewer components), chaining multiple array iteration methods like `.filter().length` over the same array repeatedly causes severe memory allocations and N times redundant loops, dropping performance for frequent operations. We should consolidate these array scans into a single manual `forEach` or `for...of` pass to achieve O(N) execution time.
+**Action:** Use a single loop with condition blocks tracking counts instead of relying on multiple functional array iterations (`filter`, `some`, `every`) when calculating many values from a single list.
