@@ -1,0 +1,3 @@
+## 2024-05-24 - [Avoid Sync localStorage Reads in Render Body]
+**Learning:** Found a performance bottleneck specific to this application's architecture: `App.tsx` acts as the central state hub and re-renders frequently. Reading `localStorage` synchronously via `loadMeta()`, `loadSettings()`, and `loadStats()` during the initial state setup for `useState` meant that these expensive I/O operations were being evaluated on *every single render* of the main app component, dropping frames.
+**Action:** Always ensure persistence loading functions are moved outside the component and use lazy state initialization (`useState(() => loadData())`) to ensure these expensive reads only happen once during the initial component mount.
