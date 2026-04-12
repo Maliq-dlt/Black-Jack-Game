@@ -250,8 +250,11 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
           return;
         }
 
-        setParticles(prevParticles => 
-          prevParticles.map(p => {
+        setParticles(prevParticles => {
+          // ⚡ BOLT OPTIMIZATION: Single-pass iteration to prevent intermediate array allocation
+          // Chained .map().filter() creates temporary O(N) garbage in requestAnimationFrame.
+          // Using reduce() avoids this allocation overhead and GC pressure.
+          return prevParticles.reduce<Particle[]>((acc, p) => {
             const newLife = p.life + 16;
             const lifeProgress = newLife / p.maxLife;
             
@@ -267,18 +270,24 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
             // Fade out near end of life
             const newOpacity = lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1;
 
-            return {
-              ...p,
-              x: newX,
-              y: newY,
-              vx: newVx,
-              vy: newVy,
-              rotation: newRotation,
-              life: newLife,
-              opacity: Math.max(0, newOpacity)
-            };
-          }).filter(p => p.life < p.maxLife && p.opacity > 0)
-        );
+            const finalOpacity = Math.max(0, newOpacity);
+
+            // Equivalent to .filter() - only push if life < maxLife and opacity > 0
+            if (newLife < p.maxLife && finalOpacity > 0) {
+              acc.push({
+                ...p,
+                x: newX,
+                y: newY,
+                vx: newVx,
+                vy: newVy,
+                rotation: newRotation,
+                life: newLife,
+                opacity: finalOpacity
+              });
+            }
+            return acc;
+          }, []);
+        });
 
         animationRef.current = requestAnimationFrame(animate);
       };
