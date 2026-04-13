@@ -42,93 +42,94 @@ import { GlobalStyles, GameBackground } from './graphics';
 // Icons
 const RefreshIcon = () => <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>;
 
+// --- Persistence ---
+const loadMeta = (): MetaProgression => {
+  const defaults: MetaProgression = {
+    totalPrestigePoints: 10,
+    spentPrestigePoints: 0,
+    upgrades: {
+      extraStartingCash: 0,
+      bonusInventorySlots: 0,
+      increasedWildChance: 0,
+      bossRewardMultiplier: 0,
+      criticalWinChance: 0,
+      bustProtectionChance: 0,
+      betMultiplierBonus: 0,
+      startingArtifactSlots: 0,
+      heatMeterReduction: 0
+    },
+    skillTree: {
+      unlockedSkills: [],
+      currentPath: SpecializationPath.None,
+      pathProgress: {
+        [SpecializationPath.DealerKiller]: 0,
+        [SpecializationPath.HighRoller]: 0,
+        [SpecializationPath.Survivor]: 0,
+        [SpecializationPath.None]: 0
+      }
+    },
+    totalRuns: 0,
+    highestStageEver: 0
+  };
+  const saved = localStorage.getItem('royale_blackjack_meta');
+  if (!saved) return defaults;
+  try {
+    const parsed = JSON.parse(saved);
+    return {
+      ...defaults,
+      ...parsed,
+      upgrades: { ...defaults.upgrades, ...(parsed.upgrades || {}) },
+      skillTree: { ...defaults.skillTree, ...(parsed.skillTree || {}) }
+    };
+  } catch {
+    return defaults;
+  }
+};
+
+const loadSettings = (): GameSettings => {
+  const defaults: GameSettings = {
+    volume: 0.5,
+    isVoiceEnabled: false,
+    theme: TableTheme.ClassicGreen,
+    apiKey: ''
+  };
+  const saved = localStorage.getItem('royale_blackjack_settings');
+  if (!saved) return defaults;
+  try {
+    return { ...defaults, ...JSON.parse(saved) };
+  } catch {
+    return defaults;
+  }
+};
+
+const loadStats = (): LifetimeStats => {
+  const defaults: LifetimeStats = {
+    totalWins: 0,
+    totalLosses: 0,
+    totalBlackjacks: 0,
+    totalEarnings: 0,
+    highestBankroll: INITIAL_BANKROLL,
+    highestStreak: 0,
+    currentStreak: 0,
+    bossesDefeated: 0,
+    highestStage: 0,
+    totalRunsCompleted: 0,
+    achievements: []
+  };
+  const saved = localStorage.getItem('royale_blackjack_stats');
+  if (!saved) return defaults;
+  try {
+    return { ...defaults, ...JSON.parse(saved) };
+  } catch {
+    return defaults;
+  }
+};
+
 const App: React.FC = () => {
-  // --- Persistence ---
-  const loadMeta = (): MetaProgression => {
-    const defaults: MetaProgression = {
-      totalPrestigePoints: 10,
-      spentPrestigePoints: 0,
-      upgrades: { 
-        extraStartingCash: 0, 
-        bonusInventorySlots: 0, 
-        increasedWildChance: 0,
-        bossRewardMultiplier: 0,
-        criticalWinChance: 0,
-        bustProtectionChance: 0,
-        betMultiplierBonus: 0,
-        startingArtifactSlots: 0,
-        heatMeterReduction: 0
-      },
-      skillTree: {
-        unlockedSkills: [],
-        currentPath: SpecializationPath.None,
-        pathProgress: {
-          [SpecializationPath.DealerKiller]: 0,
-          [SpecializationPath.HighRoller]: 0,
-          [SpecializationPath.Survivor]: 0,
-          [SpecializationPath.None]: 0
-        }
-      },
-      totalRuns: 0,
-      highestStageEver: 0
-    };
-    const saved = localStorage.getItem('royale_blackjack_meta');
-    if (!saved) return defaults;
-    try {
-      const parsed = JSON.parse(saved);
-      return {
-        ...defaults,
-        ...parsed,
-        upgrades: { ...defaults.upgrades, ...(parsed.upgrades || {}) },
-        skillTree: { ...defaults.skillTree, ...(parsed.skillTree || {}) }
-      };
-    } catch {
-      return defaults;
-    }
-  };
-
-  const loadSettings = (): GameSettings => {
-    const defaults: GameSettings = {
-      volume: 0.5,
-      isVoiceEnabled: false,
-      theme: TableTheme.ClassicGreen,
-      apiKey: ''
-    };
-    const saved = localStorage.getItem('royale_blackjack_settings');
-    if (!saved) return defaults;
-    try {
-      return { ...defaults, ...JSON.parse(saved) };
-    } catch {
-      return defaults;
-    }
-  };
-
-  const loadStats = (): LifetimeStats => {
-    const defaults: LifetimeStats = {
-      totalWins: 0,
-      totalLosses: 0,
-      totalBlackjacks: 0,
-      totalEarnings: 0,
-      highestBankroll: INITIAL_BANKROLL,
-      highestStreak: 0,
-      currentStreak: 0,
-      bossesDefeated: 0,
-      highestStage: 0,
-      totalRunsCompleted: 0,
-      achievements: []
-    };
-    const saved = localStorage.getItem('royale_blackjack_stats');
-    if (!saved) return defaults;
-    try {
-      return { ...defaults, ...JSON.parse(saved) };
-    } catch {
-      return defaults;
-    }
-  };
-
   // --- State ---
-  const initialMeta = loadMeta();
-  const [gameState, setGameState] = useState<GameState>({
+  const [gameState, setGameState] = useState<GameState>(() => {
+    const initialMeta = loadMeta();
+    return {
     deck: [],
     dealerHand: createHand(),
     playerHands: [createHand()],
@@ -173,6 +174,7 @@ const App: React.FC = () => {
       maxInterest: 250,
       lastRestock: Date.now()
     }
+    };
   });
 
   const [peakBankroll, setPeakBankroll] = useState(INITIAL_BANKROLL);
@@ -180,7 +182,7 @@ const App: React.FC = () => {
   const [isDeckViewerOpen, setIsDeckViewerOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isSkillTreeOpen, setIsSkillTreeOpen] = useState(false);
-  const [lifetimeStats, setLifetimeStats] = useState<LifetimeStats>(loadStats);
+  const [lifetimeStats, setLifetimeStats] = useState<LifetimeStats>(() => loadStats());
   const [pendingAchievement, setPendingAchievement] = useState<Achievement | null>(null);
   const [selectedCardForInfo, setSelectedCardForInfo] = useState<{ card: Card; position: { x: number; y: number } } | null>(null);
 
