@@ -1,0 +1,4 @@
+## 2024-05-24 - Initial Bolt Initialization\n**Learning:** Started bolt optimizations for Royale Rogue\n**Action:** Track critical performance insights.
+## 2024-05-24 - React Main Thread Blocking Avoidance
+**Learning:** Found that `localStorage.getItem` was being called synchronously during every re-render of the top-level `App` component because the persistence loading functions (`loadMeta`, `loadSettings`, `loadStats`) were defined and called inside the component body or as direct `useState` initializers.
+**Action:** Always move persistence loading functions outside the component scope and use lazy initialization callbacks (`useState(() => loadData())`) to ensure these expensive, synchronous I/O operations only occur once during the initial mount, preventing frame drops during high-frequency updates (like score counters or animations).
