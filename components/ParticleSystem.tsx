@@ -250,8 +250,9 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
           return;
         }
 
+        // ⚡ Bolt: Single-pass optimization to prevent O(N) intermediate array allocations in requestAnimationFrame
         setParticles(prevParticles => 
-          prevParticles.map(p => {
+          prevParticles.reduce<Particle[]>((acc, p) => {
             const newLife = p.life + 16;
             const lifeProgress = newLife / p.maxLife;
             
@@ -267,17 +268,20 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
             // Fade out near end of life
             const newOpacity = lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1;
 
-            return {
-              ...p,
-              x: newX,
-              y: newY,
-              vx: newVx,
-              vy: newVy,
-              rotation: newRotation,
-              life: newLife,
-              opacity: Math.max(0, newOpacity)
-            };
-          }).filter(p => p.life < p.maxLife && p.opacity > 0)
+            if (newLife < p.maxLife && newOpacity > 0) {
+              acc.push({
+                ...p,
+                x: newX,
+                y: newY,
+                vx: newVx,
+                vy: newVy,
+                rotation: newRotation,
+                life: newLife,
+                opacity: Math.max(0, newOpacity)
+              });
+            }
+            return acc;
+          }, [])
         );
 
         animationRef.current = requestAnimationFrame(animate);
