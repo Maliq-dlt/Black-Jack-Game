@@ -102,5 +102,7 @@ const Chip: React.FC<ChipProps> = ({ value, onClick, disabled, color, isStacked 
   );
 };
 
-export default Chip;
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when parent gameState updates
+// but specific chip props (value, color, etc.) remain unchanged. Crucial since App.tsx re-renders often.
+export default React.memo(Chip);
 

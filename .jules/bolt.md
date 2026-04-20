@@ -1,0 +1,3 @@
+## 2026-04-20 - [Combo Map Optimization]
+**Learning:** Found an O(N) array lookup `COMBO_BONUSES.find()` inside the `calculateComboBonus` function which is called multiple times per hand. Precomputing this array into a Map allows O(1) lookups, providing a measurable reduction in computation overhead during intensive end-of-hand evaluations.
+**Action:** Always precompute static configuration arrays into a Map or Record object if they'll be repeatedly queried by a unique ID or key.
