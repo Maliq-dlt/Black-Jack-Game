@@ -250,35 +250,36 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
           return;
         }
 
-        setParticles(prevParticles => 
-          prevParticles.map(p => {
+        setParticles(prevParticles => {
+          // ⚡ Bolt: Use a single-pass loop to avoid O(N) array allocation overhead from chained map/filter in requestAnimationFrame
+          const nextParticles = [];
+          for (let i = 0; i < prevParticles.length; i++) {
+            const p = prevParticles[i];
             const newLife = p.life + 16;
             const lifeProgress = newLife / p.maxLife;
             
-            // Update position
-            const newVx = p.vx * config.drag;
-            const newVy = p.vy * config.drag + config.gravity;
-            const newX = p.x + newVx;
-            const newY = p.y + newVy;
-            
-            // Update rotation
-            const newRotation = p.rotation + (p.vx * 2);
-
             // Fade out near end of life
-            const newOpacity = lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1;
+            const newOpacity = Math.max(0, lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1);
 
-            return {
-              ...p,
-              x: newX,
-              y: newY,
-              vx: newVx,
-              vy: newVy,
-              rotation: newRotation,
-              life: newLife,
-              opacity: Math.max(0, newOpacity)
-            };
-          }).filter(p => p.life < p.maxLife && p.opacity > 0)
-        );
+            if (newLife < p.maxLife && newOpacity > 0) {
+              // Update position
+              const newVx = p.vx * config.drag;
+              const newVy = p.vy * config.drag + config.gravity;
+
+              nextParticles.push({
+                ...p,
+                x: p.x + newVx,
+                y: p.y + newVy,
+                vx: newVx,
+                vy: newVy,
+                rotation: p.rotation + (p.vx * 2),
+                life: newLife,
+                opacity: newOpacity
+              });
+            }
+          }
+          return nextParticles;
+        });
 
         animationRef.current = requestAnimationFrame(animate);
       };
