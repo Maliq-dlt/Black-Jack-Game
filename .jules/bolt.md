@@ -1,0 +1,3 @@
+## 2024-05-24 - [Avoid Synchronous localStorage.getItem reads in React render body]
+**Learning:** React performance suffers heavily when operations like `localStorage.getItem` and `JSON.parse` run synchronously within the component body during every re-render. A frequent cause is when `useState` initializer values are evaluated directly in the function body rather than lazily.
+**Action:** Always move persistence loading functions outside of the React component body. For the main component state (e.g., `gameState`), use lazy state initialization (`useState(() => { ... })`) to ensure `localStorage` parses occur only once upon component mount.
