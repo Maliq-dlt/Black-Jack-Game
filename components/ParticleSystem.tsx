@@ -251,10 +251,18 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
         }
 
         setParticles(prevParticles => 
-          prevParticles.map(p => {
+          // ⚡ BOLT: Optimization - Replaced .map().filter() with a single-pass .reduce()
+          // to prevent O(N) array allocation and garbage collection overhead per frame
+          prevParticles.reduce((acc, p) => {
             const newLife = p.life + 16;
+            if (newLife >= p.maxLife) return acc;
+
+            // Fade out near end of life
             const lifeProgress = newLife / p.maxLife;
+            const newOpacity = lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1;
             
+            if (newOpacity <= 0) return acc;
+
             // Update position
             const newVx = p.vx * config.drag;
             const newVy = p.vy * config.drag + config.gravity;
@@ -264,10 +272,7 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
             // Update rotation
             const newRotation = p.rotation + (p.vx * 2);
 
-            // Fade out near end of life
-            const newOpacity = lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1;
-
-            return {
+            acc.push({
               ...p,
               x: newX,
               y: newY,
@@ -275,9 +280,10 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
               vy: newVy,
               rotation: newRotation,
               life: newLife,
-              opacity: Math.max(0, newOpacity)
-            };
-          }).filter(p => p.life < p.maxLife && p.opacity > 0)
+              opacity: newOpacity
+            });
+            return acc;
+          }, [] as typeof prevParticles)
         );
 
         animationRef.current = requestAnimationFrame(animate);
