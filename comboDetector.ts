@@ -193,13 +193,20 @@ function hasPair(cards: Card[]): boolean {
 
 /**
  * Check for three of a kind
+ * ⚡ Bolt Performance: Uses O(N^2) manual loop to avoid object allocation and
+ * closure overhead in small arrays (N < 20).
  */
 function hasThreeOfAKind(cards: Card[]): boolean {
-  const rankCounts: Record<string, number> = {};
-  cards.forEach(c => {
-    rankCounts[c.rank] = (rankCounts[c.rank] || 0) + 1;
-  });
-  return Object.values(rankCounts).some(count => count >= 3);
+  for (let i = 0; i < cards.length; i++) {
+    let count = 1;
+    for (let j = i + 1; j < cards.length; j++) {
+      if (cards[i].rank === cards[j].rank) {
+        count++;
+        if (count >= 3) return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**

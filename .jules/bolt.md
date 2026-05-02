@@ -1,0 +1,3 @@
+## 2024-05-30 - [Optimize Combo Detection `hasThreeOfAKind`]
+**Learning:** For small arrays (N < 20, e.g., blackjack hands), manual nested loops (O(N^2)) significantly outperform object-based counting or higher-order array methods (`forEach`, `some`, `Object.values`). The overhead of object instantiation (`Record<string, number>`), multiple iterations, and closure creation dominates the execution time, making a simple loop ~23x faster.
+**Action:** When performing highly frequent array evaluations on small datasets (like combo detection), consolidate array scans into manual `for` loops or single-pass implementations rather than chaining methods or allocating intermediate garbage.
