@@ -250,9 +250,17 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
           return;
         }
 
-        setParticles(prevParticles => 
-          prevParticles.map(p => {
+        // Performance optimization: Using a single-pass for-loop instead of chained .map().filter()
+        // inside requestAnimationFrame to eliminate intermediate garbage allocations and prevent frame drops.
+        setParticles(prevParticles => {
+          const nextParticles: Particle[] = [];
+          for (let i = 0; i < prevParticles.length; i++) {
+            const p = prevParticles[i];
             const newLife = p.life + 16;
+
+            // Prune dead particles
+            if (newLife >= p.maxLife) continue;
+
             const lifeProgress = newLife / p.maxLife;
             
             // Update position
@@ -267,7 +275,9 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
             // Fade out near end of life
             const newOpacity = lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1;
 
-            return {
+            if (newOpacity <= 0) continue;
+
+            nextParticles.push({
               ...p,
               x: newX,
               y: newY,
@@ -275,10 +285,11 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
               vy: newVy,
               rotation: newRotation,
               life: newLife,
-              opacity: Math.max(0, newOpacity)
-            };
-          }).filter(p => p.life < p.maxLife && p.opacity > 0)
-        );
+              opacity: newOpacity
+            });
+          }
+          return nextParticles;
+        });
 
         animationRef.current = requestAnimationFrame(animate);
       };
