@@ -35,6 +35,10 @@ const DeckViewer: React.FC<DeckViewerProps> = ({ isOpen, onClose, deck, removedR
 
   const totalCards = deck.length;
 
+  const highCardsCount = ['10', 'J', 'Q', 'K', 'A'].reduce((sum, rank) => sum + (cardCounts[rank]?.count || 0), 0);
+  const acesCount = cardCounts[Rank.Ace]?.count || 0;
+  const lowCardsCount = ['2', '3', '4', '5', '6'].reduce((sum, rank) => sum + (cardCounts[rank]?.count || 0), 0);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -112,19 +116,19 @@ const DeckViewer: React.FC<DeckViewerProps> = ({ isOpen, onClose, deck, removedR
               <div className="bg-black/5 p-4" style={{ clipPath: 'polygon(1% 10%, 99% 2%, 95% 95%, 5% 90%)' }}>
                 <p className="text-[10px] text-[#1a1a1a]/50 font-black uppercase tracking-widest mb-1">High Cards</p>
                 <p className="text-3xl font-black text-[#1a1a1a]">
-                  {deck.filter(c => ['10', 'J', 'Q', 'K', 'A'].includes(c.rank)).length}
+                  {highCardsCount}
                 </p>
               </div>
               <div className="bg-[#8b0000]/5 p-4 border border-[#8b0000]/20" style={{ clipPath: 'polygon(5% 2%, 95% 5%, 99% 98%, 2% 95%)' }}>
                 <p className="text-[10px] text-[#8b0000]/60 font-black uppercase tracking-widest mb-1">Aces</p>
                 <p className="text-3xl font-black text-[#8b0000]">
-                  {deck.filter(c => c.rank === Rank.Ace).length}
+                  {acesCount}
                 </p>
               </div>
               <div className="bg-black/5 p-4" style={{ clipPath: 'polygon(2% 5%, 98% 10%, 90% 95%, 10% 98%)' }}>
                 <p className="text-[10px] text-[#1a1a1a]/50 font-black uppercase tracking-widest mb-1">Low Cards</p>
                 <p className="text-3xl font-black text-gray-500">
-                  {deck.filter(c => ['2', '3', '4', '5', '6'].includes(c.rank)).length}
+                  {lowCardsCount}
                 </p>
               </div>
             </div>
