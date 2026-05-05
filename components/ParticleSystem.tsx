@@ -250,10 +250,20 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
           return;
         }
 
-        setParticles(prevParticles => 
-          prevParticles.map(p => {
+        setParticles(prevParticles => {
+          // ⚡ Bolt Optimization: Use single-pass loop instead of .map().filter()
+          // Prevents O(N) array allocation overhead and GC pressure during 60fps animations
+          const nextParticles: Particle[] = [];
+          for (let i = 0; i < prevParticles.length; i++) {
+            const p = prevParticles[i];
             const newLife = p.life + 16;
+
+            if (newLife >= p.maxLife) continue;
+
             const lifeProgress = newLife / p.maxLife;
+            const newOpacity = lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1;
+
+            if (newOpacity <= 0) continue;
             
             // Update position
             const newVx = p.vx * config.drag;
@@ -264,10 +274,7 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
             // Update rotation
             const newRotation = p.rotation + (p.vx * 2);
 
-            // Fade out near end of life
-            const newOpacity = lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1;
-
-            return {
+            nextParticles.push({
               ...p,
               x: newX,
               y: newY,
@@ -275,10 +282,11 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
               vy: newVy,
               rotation: newRotation,
               life: newLife,
-              opacity: Math.max(0, newOpacity)
-            };
-          }).filter(p => p.life < p.maxLife && p.opacity > 0)
-        );
+              opacity: newOpacity
+            });
+          }
+          return nextParticles;
+        });
 
         animationRef.current = requestAnimationFrame(animate);
       };
