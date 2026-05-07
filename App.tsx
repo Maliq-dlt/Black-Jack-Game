@@ -20,7 +20,7 @@ import AchievementPopup, { ACHIEVEMENTS, createAchievement } from './components/
 import { BossBattlePhases, BossAbility, BossPhase } from './components/BossBattlePhases';
 import { FlashType } from './components/FlashOverlay';
 import { ParticleType } from './components/ParticleSystem';
-import { BOSS_DATA, getBossForStage, isBossStage, getBossDialogue } from './bossData';
+import { BOSS_DATA, BOSS_MAP, getBossForStage, isBossStage, getBossDialogue } from './bossData';
 import { SkillTreeScreen } from './components/SkillTreeScreen';
 import { SpecializationPath } from './types';
 
@@ -895,7 +895,7 @@ const App: React.FC = () => {
 
           // Damage Boss Logic
           if (prev.isBossRound && prev.currentBossId && netWin > 0) {
-              const boss = BOSS_DATA.find(b => b.id === prev.currentBossId);
+              const boss = BOSS_MAP.get(prev.currentBossId);
               if (boss) {
                   // Damage boss based on netWin
                   boss.currentHealth = Math.max(0, boss.currentHealth - netWin);
@@ -1196,7 +1196,7 @@ const App: React.FC = () => {
   const handleBossHealthChange = useCallback((health: number) => {
     setGameState(prev => {
         if (!prev.currentBossId) return prev;
-        const boss = BOSS_DATA.find(b => b.id === prev.currentBossId);
+        const boss = BOSS_MAP.get(prev.currentBossId);
         if (!boss) return prev;
         return {
             ...prev,
@@ -1423,7 +1423,7 @@ const App: React.FC = () => {
       {gameState.isBossRound && gameState.currentBossId && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] w-full max-w-2xl px-4">
           <BossBattlePhases
-            boss={BOSS_DATA.find(b => b.id === gameState.currentBossId) || BOSS_DATA[0]}
+            boss={BOSS_MAP.get(gameState.currentBossId as string) || BOSS_DATA[0]}
             onHealthChange={handleBossHealthChange}
             onPhaseChange={handleBossPhaseChange}
             onAbilityTrigger={handleBossAbilityTrigger}
