@@ -234,18 +234,26 @@ export const ASCENSION_LEVELS: AscensionLevel[] = [
   },
 ];
 
+export const ASCENSION_LEVELS_MAP = new Map<number, AscensionLevel>(
+  ASCENSION_LEVELS.map(a => [a.level, a])
+);
+
+export const RUN_MODES_MAP = new Map<RunMode, RunModeConfig>(
+  RUN_MODES.map(r => [r.mode, r])
+);
+
 /**
  * Get ascension level by number
  */
 export function getAscensionLevel(level: number): AscensionLevel | undefined {
-  return ASCENSION_LEVELS.find(a => a.level === level);
+  return ASCENSION_LEVELS_MAP.get(level);
 }
 
 /**
  * Get run mode config
  */
 export function getRunModeConfig(mode: RunMode): RunModeConfig | undefined {
-  return RUN_MODES.find(r => r.mode === mode);
+  return RUN_MODES_MAP.get(mode);
 }
 
 /**

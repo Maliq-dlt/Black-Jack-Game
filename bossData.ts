@@ -592,6 +592,10 @@ export const BOSS_DATA: BossData[] = [
   },
 ];
 
+export const BOSS_MAP = new Map<string, BossData>(
+  BOSS_DATA.map(boss => [boss.id, boss])
+);
+
 /**
  * Get boss for a specific stage
  */
