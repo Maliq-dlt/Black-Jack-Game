@@ -131,11 +131,15 @@ export function getSkillsByPath(path: SpecializationPath): SkillNode[] {
   return SKILL_NODES.filter(s => s.path === path);
 }
 
+export const SKILL_NODES_MAP = new Map<string, SkillNode>(
+  SKILL_NODES.map(s => [s.id, s])
+);
+
 /**
  * Get skill by ID
  */
 export function getSkillById(id: string): SkillNode | undefined {
-  return SKILL_NODES.find(s => s.id === id);
+  return SKILL_NODES_MAP.get(id);
 }
 
 /**

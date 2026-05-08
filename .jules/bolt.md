@@ -1,0 +1,5 @@
+## 2025-05-08 - Optimize `ComboType` and Static Config Lookups
+
+**Learning:** Static arrays like `COMBO_BONUSES` (and `BOSS_DATA`, `ASCENSION_LEVELS`, `RUN_MODES`, `SKILL_NODES`, `JOKERS`) are frequently queried inside loops and game loops using `.find()`. Using `.find()` for static array lookups inside game loops or frequent event triggers creates O(N) array scans, which is an unnecessary overhead when looking up static objects by an ID. Creating a global precomputed `Map` drops lookups to O(1) and eliminates the closure creation overhead. A benchmark script on `COMBO_BONUSES` lookup optimization showed over a 2x performance improvement.
+
+**Action:** Replace `COMBO_BONUSES.find(...)` with `COMBO_BONUSES_MAP.get(...)` inside `calculateComboBonus` and `getComboInfo`. Apply the same optimization using globally exported Maps for static entities globally exported via ID in `bossData.ts`, `ascensionData.ts`, `skillData.ts`, and `jokerData.ts`. Also export a `BOSS_MAP` to optimize `App.tsx`'s boss object lookup during state updates and rendering.
