@@ -112,19 +112,30 @@ const DeckViewer: React.FC<DeckViewerProps> = ({ isOpen, onClose, deck, removedR
               <div className="bg-black/5 p-4" style={{ clipPath: 'polygon(1% 10%, 99% 2%, 95% 95%, 5% 90%)' }}>
                 <p className="text-[10px] text-[#1a1a1a]/50 font-black uppercase tracking-widest mb-1">High Cards</p>
                 <p className="text-3xl font-black text-[#1a1a1a]">
-                  {deck.filter(c => ['10', 'J', 'Q', 'K', 'A'].includes(c.rank)).length}
+                  {/* ⚡ Bolt: O(1) lookups from precomputed cardCounts instead of O(N) deck.filter */}
+                  {(cardCounts['10']?.count || 0) +
+                   (cardCounts['J']?.count || 0) +
+                   (cardCounts['Q']?.count || 0) +
+                   (cardCounts['K']?.count || 0) +
+                   (cardCounts['A']?.count || 0)}
                 </p>
               </div>
               <div className="bg-[#8b0000]/5 p-4 border border-[#8b0000]/20" style={{ clipPath: 'polygon(5% 2%, 95% 5%, 99% 98%, 2% 95%)' }}>
                 <p className="text-[10px] text-[#8b0000]/60 font-black uppercase tracking-widest mb-1">Aces</p>
                 <p className="text-3xl font-black text-[#8b0000]">
-                  {deck.filter(c => c.rank === Rank.Ace).length}
+                  {/* ⚡ Bolt: O(1) lookup instead of O(N) deck.filter */}
+                  {cardCounts[Rank.Ace]?.count || 0}
                 </p>
               </div>
               <div className="bg-black/5 p-4" style={{ clipPath: 'polygon(2% 5%, 98% 10%, 90% 95%, 10% 98%)' }}>
                 <p className="text-[10px] text-[#1a1a1a]/50 font-black uppercase tracking-widest mb-1">Low Cards</p>
                 <p className="text-3xl font-black text-gray-500">
-                  {deck.filter(c => ['2', '3', '4', '5', '6'].includes(c.rank)).length}
+                  {/* ⚡ Bolt: O(1) lookups instead of O(N) deck.filter */}
+                  {(cardCounts['2']?.count || 0) +
+                   (cardCounts['3']?.count || 0) +
+                   (cardCounts['4']?.count || 0) +
+                   (cardCounts['5']?.count || 0) +
+                   (cardCounts['6']?.count || 0)}
                 </p>
               </div>
             </div>
