@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RunMode, AscensionLevel } from '../types';
-import { RUN_MODES, ASCENSION_LEVELS, ASCENSION_MODIFIER_INFO } from '../ascensionData';
+import { RUN_MODES, ASCENSION_LEVELS, ASCENSION_MODIFIER_INFO, ASCENSION_MAP, RUN_MODE_MAP } from '../ascensionData';
 
 interface RunModeScreenProps {
   isOpen: boolean;
@@ -23,8 +23,8 @@ export const RunModeScreen: React.FC<RunModeScreenProps> = ({
   const [selectedMode, setSelectedMode] = React.useState<RunMode>(RunMode.Standard);
   const [selectedAscension, setSelectedAscension] = React.useState(currentAscension);
   
-  const selectedModeConfig = RUN_MODES.find(r => r.mode === selectedMode)!;
-  const selectedAscensionData = ASCENSION_LEVELS.find(a => a.level === selectedAscension);
+  const selectedModeConfig = RUN_MODE_MAP.get(selectedMode)!;
+  const selectedAscensionData = ASCENSION_MAP.get(selectedAscension);
 
   if (!isOpen) return null;
 
@@ -115,7 +115,7 @@ export const RunModeScreen: React.FC<RunModeScreenProps> = ({
                 {Array.from({ length: 20 }, (_, i) => i + 1).map((level) => {
                   const isUnlocked = level <= highestAscension + 1;
                   const isSelected = selectedAscension === level;
-                  const ascData = ASCENSION_LEVELS.find(a => a.level === level);
+                  const ascData = ASCENSION_MAP.get(level);
                   
                   return (
                     <button
