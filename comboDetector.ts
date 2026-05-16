@@ -100,6 +100,10 @@ export const COMBO_BONUSES: ComboBonus[] = [
   },
 ];
 
+export const COMBO_BONUSES_MAP = new Map<ComboType, ComboBonus>(
+  COMBO_BONUSES.map(bonus => [bonus.type, bonus])
+);
+
 // ============================================
 // RANK VALUE HELPERS
 // ============================================
@@ -234,7 +238,7 @@ export function calculateComboBonus(combos: ComboType[]): { mult: number; gold: 
   let gold = 0;
   
   combos.forEach(combo => {
-    const bonus = COMBO_BONUSES.find(b => b.type === combo);
+    const bonus = COMBO_BONUSES_MAP.get(combo);
     if (bonus) {
       mult += bonus.multBonus;
       gold += bonus.goldBonus;
@@ -294,7 +298,7 @@ export function updateScoringChain(
  * Get combo info for display
  */
 export function getComboInfo(type: ComboType): ComboBonus | undefined {
-  return COMBO_BONUSES.find(b => b.type === type);
+  return COMBO_BONUSES_MAP.get(type);
 }
 
 // ============================================
