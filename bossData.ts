@@ -592,11 +592,20 @@ export const BOSS_DATA: BossData[] = [
   },
 ];
 
+// Precomputed maps for O(1) lookups
+export const BOSS_MAP_BY_ID = new Map<string, BossData>(
+  BOSS_DATA.map(boss => [boss.id, boss])
+);
+
+export const BOSS_MAP_BY_STAGE = new Map<number, BossData>(
+  BOSS_DATA.map(boss => [boss.stageAppears, boss])
+);
+
 /**
  * Get boss for a specific stage
  */
 export function getBossForStage(stage: number): BossData | null {
-  return BOSS_DATA.find(boss => boss.stageAppears === stage) || null;
+  return BOSS_MAP_BY_STAGE.get(stage) || null;
 }
 
 /**

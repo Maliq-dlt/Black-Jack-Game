@@ -1,0 +1,3 @@
+## 2024-05-24 - [Avoid Array.find() on Static Arrays in Renders]
+**Learning:** Using `Array.find()` on static configuration arrays (like `BOSS_DATA` or `COMBO_BONUSES`) inside frequently evaluated code paths (like React render cycles in `App.tsx` or combo logic loops) causes unnecessary O(N) iteration overhead. Over time, particularly when chained or executed within complex components, this causes measurable CPU lag.
+**Action:** Always precompute `Map` objects (e.g. `BOSS_MAP_BY_ID`, `COMBO_BONUSES_MAP`) alongside static configuration arrays and use `.get()` to achieve O(1) lookups in high-frequency rendering and calculation loops.
