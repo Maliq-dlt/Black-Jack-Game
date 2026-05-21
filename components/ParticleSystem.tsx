@@ -250,8 +250,10 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
           return;
         }
 
-        setParticles(prevParticles => 
-          prevParticles.map(p => {
+        setParticles(prevParticles => {
+          const nextParticles = [];
+          for (let i = 0; i < prevParticles.length; i++) {
+            const p = prevParticles[i];
             const newLife = p.life + 16;
             const lifeProgress = newLife / p.maxLife;
             
@@ -266,19 +268,23 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
 
             // Fade out near end of life
             const newOpacity = lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1;
+            const opacity = Math.max(0, newOpacity);
 
-            return {
-              ...p,
-              x: newX,
-              y: newY,
-              vx: newVx,
-              vy: newVy,
-              rotation: newRotation,
-              life: newLife,
-              opacity: Math.max(0, newOpacity)
-            };
-          }).filter(p => p.life < p.maxLife && p.opacity > 0)
-        );
+            if (newLife < p.maxLife && opacity > 0) {
+              nextParticles.push({
+                ...p,
+                x: newX,
+                y: newY,
+                vx: newVx,
+                vy: newVy,
+                rotation: newRotation,
+                life: newLife,
+                opacity: opacity
+              });
+            }
+          }
+          return nextParticles;
+        });
 
         animationRef.current = requestAnimationFrame(animate);
       };
@@ -476,8 +482,10 @@ export const ContinuousParticles: React.FC<ContinuousParticlesProps> = ({
     setParticles(initialParticles);
 
     const animate = () => {
-      setParticles(prevParticles => 
-        prevParticles.map(p => {
+      setParticles(prevParticles => {
+        const nextParticles = [];
+        for (let i = 0; i < prevParticles.length; i++) {
+          const p = prevParticles[i];
           let newX = p.x + p.vx;
           let newY = p.y + p.vy;
 
@@ -489,13 +497,14 @@ export const ContinuousParticles: React.FC<ContinuousParticlesProps> = ({
           if (newX > window.innerWidth) newX = 0;
           if (newX < 0) newX = window.innerWidth;
 
-          return {
+          nextParticles.push({
             ...p,
             x: newX,
             y: newY
-          };
-        })
-      );
+          });
+        }
+        return nextParticles;
+      });
 
       animationRef.current = requestAnimationFrame(animate);
     };
