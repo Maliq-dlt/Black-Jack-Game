@@ -100,6 +100,11 @@ export const COMBO_BONUSES: ComboBonus[] = [
   },
 ];
 
+// O(1) Lookup Map for performance
+export const COMBO_BONUSES_MAP = new Map<ComboType, ComboBonus>(
+  COMBO_BONUSES.map(b => [b.type, b])
+);
+
 // ============================================
 // RANK VALUE HELPERS
 // ============================================
@@ -187,19 +192,30 @@ export function detectCombos(
  * Check for pair
  */
 function hasPair(cards: Card[]): boolean {
-  const ranks = cards.map(c => c.rank);
-  return ranks.some((r, i) => ranks.indexOf(r) !== i);
+  for (let i = 0; i < cards.length; i++) {
+    for (let j = i + 1; j < cards.length; j++) {
+      if (cards[i].rank === cards[j].rank) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
  * Check for three of a kind
  */
 function hasThreeOfAKind(cards: Card[]): boolean {
-  const rankCounts: Record<string, number> = {};
-  cards.forEach(c => {
-    rankCounts[c.rank] = (rankCounts[c.rank] || 0) + 1;
-  });
-  return Object.values(rankCounts).some(count => count >= 3);
+  for (let i = 0; i < cards.length; i++) {
+    let count = 1;
+    for (let j = i + 1; j < cards.length; j++) {
+      if (cards[i].rank === cards[j].rank) {
+        count++;
+        if (count >= 3) return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
@@ -234,7 +250,7 @@ export function calculateComboBonus(combos: ComboType[]): { mult: number; gold: 
   let gold = 0;
   
   combos.forEach(combo => {
-    const bonus = COMBO_BONUSES.find(b => b.type === combo);
+    const bonus = COMBO_BONUSES_MAP.get(combo);
     if (bonus) {
       mult += bonus.multBonus;
       gold += bonus.goldBonus;
@@ -294,7 +310,7 @@ export function updateScoringChain(
  * Get combo info for display
  */
 export function getComboInfo(type: ComboType): ComboBonus | undefined {
-  return COMBO_BONUSES.find(b => b.type === type);
+  return COMBO_BONUSES_MAP.get(type);
 }
 
 // ============================================
