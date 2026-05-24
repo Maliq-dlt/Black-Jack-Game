@@ -1,0 +1,3 @@
+## 2024-05-18 - [Optimize Combo Bonuses Lookups]
+**Learning:** In highly frequent evaluations like `calculateComboBonus` inside `comboDetector.ts`, using `Array.find()` on static configuration arrays creates an O(N * M) bottleneck. For small arrays, object instantiation and closure creation dominate execution time, leading to unnecessary CPU overhead.
+**Action:** Replaced `Array.find()` with a precomputed globally exported `Map` (`COMBO_BONUSES_MAP`) to ensure O(1) retrieval. This pattern should be consistently applied to other static configuration arrays like `BOSS_DATA` and `ASCENSION_LEVELS`.
