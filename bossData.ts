@@ -5,6 +5,8 @@ import { BossData, BossDialogue, BossPersonality, BossTrait } from './types';
  * Each boss has distinct personality, traits, and dialogue
  */
 
+export const BOSS_DATA_MAP = new Map<string, BossData>();
+
 export const BOSS_DATA: BossData[] = [
   // ====================
   // STAGE 5 - THE PERFECTIONIST
@@ -591,6 +593,9 @@ export const BOSS_DATA: BossData[] = [
     },
   },
 ];
+
+// Initialize BOSS_DATA_MAP
+BOSS_DATA.forEach(boss => BOSS_DATA_MAP.set(boss.id, boss));
 
 /**
  * Get boss for a specific stage
