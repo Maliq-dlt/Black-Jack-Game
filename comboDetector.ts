@@ -187,19 +187,32 @@ export function detectCombos(
  * Check for pair
  */
 function hasPair(cards: Card[]): boolean {
-  const ranks = cards.map(c => c.rank);
-  return ranks.some((r, i) => ranks.indexOf(r) !== i);
+  const len = cards.length;
+  for (let i = 0; i < len - 1; i++) {
+    for (let j = i + 1; j < len; j++) {
+      if (cards[i].rank === cards[j].rank) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
  * Check for three of a kind
  */
 function hasThreeOfAKind(cards: Card[]): boolean {
-  const rankCounts: Record<string, number> = {};
-  cards.forEach(c => {
-    rankCounts[c.rank] = (rankCounts[c.rank] || 0) + 1;
-  });
-  return Object.values(rankCounts).some(count => count >= 3);
+  const len = cards.length;
+  for (let i = 0; i < len - 2; i++) {
+    let count = 1;
+    for (let j = i + 1; j < len; j++) {
+      if (cards[i].rank === cards[j].rank) {
+        count++;
+        if (count >= 3) return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
