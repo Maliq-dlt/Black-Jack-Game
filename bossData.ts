@@ -592,6 +592,12 @@ export const BOSS_DATA: BossData[] = [
   },
 ];
 
+
+/**
+ * O(1) Map for faster boss lookups by ID
+ */
+export const BOSS_DATA_MAP = new Map(BOSS_DATA.map(boss => [boss.id, boss]));
+
 /**
  * Get boss for a specific stage
  */
