@@ -1,0 +1,3 @@
+## 2024-05-19 - [O(1) Map Lookups for Static Config Arrays]
+**Learning:** In a highly interactive React application with frequent re-renders (like Royale Blackjack AI), chaining `Array.find()` lookups inside render paths or nested loops for static configurations (e.g. `BOSS_DATA`, `JOKERS`, `ASCENSION_LEVELS`) creates hidden O(N) or O(N^2) bottlenecks.
+**Action:** When working with bounded, globally exported static arrays that serve as "databases" for entity lookups, preemptively create and export `Map` objects using `new Map(ARRAY.map(item => [item.id, item]))`. Use `Map.get(id)` instead of `Array.find(item => item.id === id)` for O(1) retrieval to ensure performance scaling during frequent evaluations or re-renders.
