@@ -257,7 +257,7 @@ export function getRandomJokers(count: number, excludeIds: string[] = []): Joker
  * Get joker by ID
  */
 export function getJokerById(id: string): Joker | undefined {
-  return JOKERS.find(j => j.id === id);
+  return JOKERS_MAP.get(id);
 }
 
 /**
@@ -283,3 +283,8 @@ export const JOKER_RARITY_COLORS: Record<JokerRarity, { bg: string; border: stri
   [JokerRarity.Legendary]: { bg: 'bg-yellow-100', border: 'border-yellow-500', text: 'text-yellow-700' },
   [JokerRarity.Cursed]: { bg: 'bg-red-100', border: 'border-red-600', text: 'text-red-700' },
 };
+
+/**
+ * O(1) Map for joker lookups by ID
+ */
+export const JOKERS_MAP = new Map<string, Joker>(JOKERS.map(joker => [joker.id, joker]));

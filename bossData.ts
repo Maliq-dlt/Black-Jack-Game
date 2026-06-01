@@ -596,7 +596,7 @@ export const BOSS_DATA: BossData[] = [
  * Get boss for a specific stage
  */
 export function getBossForStage(stage: number): BossData | null {
-  return BOSS_DATA.find(boss => boss.stageAppears === stage) || null;
+  return BOSS_BY_STAGE_MAP.get(stage) || null;
 }
 
 /**
@@ -613,3 +613,13 @@ export function getBossDialogue(boss: BossData, type: keyof BossDialogue): strin
   const dialogues = boss.dialogue[type];
   return dialogues[Math.floor(Math.random() * dialogues.length)];
 }
+
+/**
+ * O(1) Map for boss lookups by ID
+ */
+export const BOSS_MAP = new Map<string, BossData>(BOSS_DATA.map(boss => [boss.id, boss]));
+
+/**
+ * O(1) Map for boss lookups by stage
+ */
+export const BOSS_BY_STAGE_MAP = new Map<number, BossData>(BOSS_DATA.map(boss => [boss.stageAppears, boss]));

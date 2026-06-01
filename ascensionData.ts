@@ -238,14 +238,14 @@ export const ASCENSION_LEVELS: AscensionLevel[] = [
  * Get ascension level by number
  */
 export function getAscensionLevel(level: number): AscensionLevel | undefined {
-  return ASCENSION_LEVELS.find(a => a.level === level);
+  return ASCENSION_MAP.get(level);
 }
 
 /**
  * Get run mode config
  */
 export function getRunModeConfig(mode: RunMode): RunModeConfig | undefined {
-  return RUN_MODES.find(r => r.mode === mode);
+  return RUN_MODES_MAP.get(mode);
 }
 
 /**
@@ -265,3 +265,13 @@ export const ASCENSION_MODIFIER_INFO: Record<AscensionModifierType, { name: stri
   [AscensionModifierType.NoWildCards]: { name: 'No Luck', icon: '🚫', description: 'Wild cards disabled' },
   [AscensionModifierType.PermanentCurse]: { name: 'Cursed', icon: '☠️', description: 'Random permanent curse' },
 };
+
+/**
+ * O(1) Map for ascension level lookups
+ */
+export const ASCENSION_MAP = new Map<number, AscensionLevel>(ASCENSION_LEVELS.map(a => [a.level, a]));
+
+/**
+ * O(1) Map for run mode config lookups
+ */
+export const RUN_MODES_MAP = new Map<RunMode, RunModeConfig>(RUN_MODES.map(r => [r.mode, r]));
