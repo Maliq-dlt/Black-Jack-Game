@@ -233,6 +233,9 @@ export const JOKERS: Joker[] = [
   },
 ];
 
+// ⚡ Bolt: Precomputed map for O(1) joker lookups, optimizing retrieval operations in the shop and inventory
+export const JOKER_MAP = new Map(JOKERS.map(j => [j.id, j]));
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
@@ -257,7 +260,7 @@ export function getRandomJokers(count: number, excludeIds: string[] = []): Joker
  * Get joker by ID
  */
 export function getJokerById(id: string): Joker | undefined {
-  return JOKERS.find(j => j.id === id);
+  return JOKER_MAP.get(id);
 }
 
 /**
