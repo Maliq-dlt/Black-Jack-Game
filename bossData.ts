@@ -592,11 +592,17 @@ export const BOSS_DATA: BossData[] = [
   },
 ];
 
+// ⚡ Bolt: Precomputed map for O(1) boss ID lookups, optimizing frequent checks during React renders and combat phases
+export const BOSS_MAP = new Map(BOSS_DATA.map(b => [b.id, b]));
+
+// ⚡ Bolt: Precomputed map for O(1) boss stage lookups, eliminating O(N) scans when transitioning between stages
+const STAGE_BOSS_MAP = new Map(BOSS_DATA.map(b => [b.stageAppears, b]));
+
 /**
  * Get boss for a specific stage
  */
 export function getBossForStage(stage: number): BossData | null {
-  return BOSS_DATA.find(boss => boss.stageAppears === stage) || null;
+  return STAGE_BOSS_MAP.get(stage) || null;
 }
 
 /**
