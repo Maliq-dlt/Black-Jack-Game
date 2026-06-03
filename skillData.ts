@@ -132,10 +132,17 @@ export function getSkillsByPath(path: SpecializationPath): SkillNode[] {
 }
 
 /**
+ * ⚡ Bolt Performance Optimization:
+ * Precomputed Map for O(1) skill node lookups.
+ * Avoids O(N) Array.find() overhead during frequent skill checks.
+ */
+export const SKILL_NODES_MAP = new Map(SKILL_NODES.map(s => [s.id, s]));
+
+/**
  * Get skill by ID
  */
 export function getSkillById(id: string): SkillNode | undefined {
-  return SKILL_NODES.find(s => s.id === id);
+  return SKILL_NODES_MAP.get(id);
 }
 
 /**
