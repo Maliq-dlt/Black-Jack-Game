@@ -593,6 +593,13 @@ export const BOSS_DATA: BossData[] = [
 ];
 
 /**
+ * ⚡ Bolt Performance Optimization:
+ * Precomputed Map for O(1) boss lookups.
+ * Replaces O(N) Array.find() to speed up frequent ID-based queries.
+ */
+export const BOSS_DATA_MAP = new Map(BOSS_DATA.map(b => [b.id, b]));
+
+/**
  * Get boss for a specific stage
  */
 export function getBossForStage(stage: number): BossData | null {
