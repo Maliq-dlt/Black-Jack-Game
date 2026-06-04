@@ -5,6 +5,8 @@ import { SkillNode, SpecializationPath } from './types';
  * Each path has 5 tiers of skills
  */
 
+export const SKILL_NODES_MAP = new Map<string, SkillNode>();
+
 export const SKILL_NODES: SkillNode[] = [
   // ================================================
   // DEALER KILLER PATH - Boss damage & rewards
@@ -124,6 +126,8 @@ export const SKILL_NODES: SkillNode[] = [
   },
 ];
 
+SKILL_NODES.forEach(skill => SKILL_NODES_MAP.set(skill.id, skill));
+
 /**
  * Get skills by specialization path
  */
@@ -135,7 +139,7 @@ export function getSkillsByPath(path: SpecializationPath): SkillNode[] {
  * Get skill by ID
  */
 export function getSkillById(id: string): SkillNode | undefined {
-  return SKILL_NODES.find(s => s.id === id);
+  return SKILL_NODES_MAP.get(id);
 }
 
 /**

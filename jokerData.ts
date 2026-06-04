@@ -17,6 +17,8 @@ import {
  * - Cursed (Red): High power + drawback
  */
 
+export const JOKERS_MAP = new Map<string, Joker>();
+
 export const JOKERS: Joker[] = [
   // ============================================
   // COMMON JOKERS (Cost: $50-100)
@@ -233,6 +235,8 @@ export const JOKERS: Joker[] = [
   },
 ];
 
+JOKERS.forEach(joker => JOKERS_MAP.set(joker.id, joker));
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
@@ -257,7 +261,7 @@ export function getRandomJokers(count: number, excludeIds: string[] = []): Joker
  * Get joker by ID
  */
 export function getJokerById(id: string): Joker | undefined {
-  return JOKERS.find(j => j.id === id);
+  return JOKERS_MAP.get(id);
 }
 
 /**
