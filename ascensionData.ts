@@ -8,6 +8,8 @@ import {
 /**
  * Run Mode Configurations
  */
+export const RUN_MODES_MAP = new Map<RunMode, RunModeConfig>();
+
 export const RUN_MODES: RunModeConfig[] = [
   {
     mode: RunMode.Standard,
@@ -89,10 +91,14 @@ export const RUN_MODES: RunModeConfig[] = [
   },
 ];
 
+RUN_MODES.forEach(mode => RUN_MODES_MAP.set(mode.mode, mode));
+
 /**
  * 20 Ascension Levels
  * Each level adds modifiers that increase difficulty but also rewards
  */
+export const ASCENSION_LEVELS_MAP = new Map<number, AscensionLevel>();
+
 export const ASCENSION_LEVELS: AscensionLevel[] = [
   // Tier 1: Getting Harder (1-5)
   {
@@ -234,18 +240,20 @@ export const ASCENSION_LEVELS: AscensionLevel[] = [
   },
 ];
 
+ASCENSION_LEVELS.forEach(level => ASCENSION_LEVELS_MAP.set(level.level, level));
+
 /**
  * Get ascension level by number
  */
 export function getAscensionLevel(level: number): AscensionLevel | undefined {
-  return ASCENSION_LEVELS.find(a => a.level === level);
+  return ASCENSION_LEVELS_MAP.get(level);
 }
 
 /**
  * Get run mode config
  */
 export function getRunModeConfig(mode: RunMode): RunModeConfig | undefined {
-  return RUN_MODES.find(r => r.mode === mode);
+  return RUN_MODES_MAP.get(mode);
 }
 
 /**
