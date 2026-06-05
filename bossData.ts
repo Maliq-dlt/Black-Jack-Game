@@ -592,11 +592,14 @@ export const BOSS_DATA: BossData[] = [
   },
 ];
 
+export const BOSS_DATA_MAP = new Map(BOSS_DATA.map(boss => [boss.id, boss]));
+export const BOSS_BY_STAGE_MAP = new Map(BOSS_DATA.map(boss => [boss.stageAppears, boss]));
+
 /**
  * Get boss for a specific stage
  */
 export function getBossForStage(stage: number): BossData | null {
-  return BOSS_DATA.find(boss => boss.stageAppears === stage) || null;
+  return BOSS_BY_STAGE_MAP.get(stage) || null;
 }
 
 /**
