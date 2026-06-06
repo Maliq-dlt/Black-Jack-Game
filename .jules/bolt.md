@@ -1,0 +1,3 @@
+## 2023-10-27 - O(1) Map Lookups for Configuration Arrays
+**Learning:** In a highly interactive app where configurations (like Boss Data, Ascension Levels, Skills, Jokers, Combos) are frequently queried during `requestAnimationFrame` hooks, calculations, and React renders, using `.find()` on static arrays like `BOSS_DATA` creates an unnecessary O(N) evaluation. Although N is small, this pattern scales poorly and creates overhead over thousands of rapid evaluations.
+**Action:** Precompute arrays into `Map` objects (e.g. `BOSS_DATA_MAP`) within their original data files and export them to ensure O(1) retrieval across the app. This drastically improves lookup speed in render methods without modifying existing structures.
