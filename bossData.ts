@@ -613,3 +613,7 @@ export function getBossDialogue(boss: BossData, type: keyof BossDialogue): strin
   const dialogues = boss.dialogue[type];
   return dialogues[Math.floor(Math.random() * dialogues.length)];
 }
+
+export const BOSS_DATA_MAP = new Map<string, BossData>(
+  BOSS_DATA.map(boss => [boss.id, boss])
+);
