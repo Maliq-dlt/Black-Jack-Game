@@ -100,6 +100,9 @@ export const COMBO_BONUSES: ComboBonus[] = [
   },
 ];
 
+// ⚡ Bolt: Precomputed Map for O(1) lookups instead of O(N) Array.find on static configurations.
+export const COMBO_BONUSES_MAP = new Map(COMBO_BONUSES.map(b => [b.type, b]));
+
 // ============================================
 // RANK VALUE HELPERS
 // ============================================
@@ -233,13 +236,15 @@ export function calculateComboBonus(combos: ComboType[]): { mult: number; gold: 
   let mult = 0;
   let gold = 0;
   
-  combos.forEach(combo => {
-    const bonus = COMBO_BONUSES.find(b => b.type === combo);
+  // ⚡ Bolt: Using a simple for-loop and O(1) Map.get() instead of O(N*M) combo.forEach() + Array.find().
+  const len = combos.length;
+  for (let i = 0; i < len; i++) {
+    const bonus = COMBO_BONUSES_MAP.get(combos[i]);
     if (bonus) {
       mult += bonus.multBonus;
       gold += bonus.goldBonus;
     }
-  });
+  }
   
   return { mult, gold };
 }
@@ -294,7 +299,7 @@ export function updateScoringChain(
  * Get combo info for display
  */
 export function getComboInfo(type: ComboType): ComboBonus | undefined {
-  return COMBO_BONUSES.find(b => b.type === type);
+  return COMBO_BONUSES_MAP.get(type);
 }
 
 // ============================================
