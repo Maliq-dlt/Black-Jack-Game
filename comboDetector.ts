@@ -100,6 +100,12 @@ export const COMBO_BONUSES: ComboBonus[] = [
   },
 ];
 
+// ⚡ Bolt Optimization: Use a map for O(1) lookups instead of O(N) Array.find() on every hand calculation
+export const COMBO_BONUSES_MAP: Record<ComboType, ComboBonus> = COMBO_BONUSES.reduce((acc, bonus) => {
+  acc[bonus.type] = bonus;
+  return acc;
+}, {} as Record<ComboType, ComboBonus>);
+
 // ============================================
 // RANK VALUE HELPERS
 // ============================================
@@ -207,7 +213,12 @@ function hasThreeOfAKind(cards: Card[]): boolean {
  */
 function isSuited(cards: Card[]): boolean {
   if (cards.length < 2) return false;
-  return cards.every(c => c.suit === cards[0].suit);
+  const firstSuit = cards[0].suit;
+  // ⚡ Bolt Optimization: Replace cards.every() with a fast loop to eliminate closure allocation
+  for (let i = 1; i < cards.length; i++) {
+    if (cards[i].suit !== firstSuit) return false;
+  }
+  return true;
 }
 
 /**
@@ -215,7 +226,12 @@ function isSuited(cards: Card[]): boolean {
  */
 function isSequential(cards: Card[]): boolean {
   if (cards.length < 3) return false;
-  const values = cards.map(getCardValue).sort((a, b) => a - b);
+  // ⚡ Bolt Optimization: Replace .map().sort() with a pre-allocated array and fast loop to eliminate GC overhead
+  const values: number[] = new Array(cards.length);
+  for (let i = 0; i < cards.length; i++) {
+    values[i] = getCardValue(cards[i]);
+  }
+  values.sort((a, b) => a - b);
   for (let i = 1; i < values.length; i++) {
     if (values[i] !== values[i - 1] + 1) return false;
   }
@@ -233,13 +249,13 @@ export function calculateComboBonus(combos: ComboType[]): { mult: number; gold: 
   let mult = 0;
   let gold = 0;
   
-  combos.forEach(combo => {
-    const bonus = COMBO_BONUSES.find(b => b.type === combo);
+  for (let i = 0; i < combos.length; i++) {
+    const bonus = COMBO_BONUSES_MAP[combos[i]];
     if (bonus) {
       mult += bonus.multBonus;
       gold += bonus.goldBonus;
     }
-  });
+  }
   
   return { mult, gold };
 }
@@ -294,7 +310,7 @@ export function updateScoringChain(
  * Get combo info for display
  */
 export function getComboInfo(type: ComboType): ComboBonus | undefined {
-  return COMBO_BONUSES.find(b => b.type === type);
+  return COMBO_BONUSES_MAP[type];
 }
 
 // ============================================
