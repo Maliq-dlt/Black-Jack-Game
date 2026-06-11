@@ -185,37 +185,67 @@ export function detectCombos(
 
 /**
  * Check for pair
+ * Performance: O(N^2) using manual loops to avoid closure overhead and array allocation for small arrays
  */
 function hasPair(cards: Card[]): boolean {
-  const ranks = cards.map(c => c.rank);
-  return ranks.some((r, i) => ranks.indexOf(r) !== i);
+  for (let i = 0; i < cards.length; i++) {
+    for (let j = i + 1; j < cards.length; j++) {
+      if (cards[i].rank === cards[j].rank) return true;
+    }
+  }
+  return false;
 }
 
 /**
  * Check for three of a kind
+ * Performance: O(N^2) using manual loops to avoid object allocation and iteration overhead for small arrays
  */
 function hasThreeOfAKind(cards: Card[]): boolean {
-  const rankCounts: Record<string, number> = {};
-  cards.forEach(c => {
-    rankCounts[c.rank] = (rankCounts[c.rank] || 0) + 1;
-  });
-  return Object.values(rankCounts).some(count => count >= 3);
+  for (let i = 0; i < cards.length; i++) {
+    let count = 1;
+    for (let j = i + 1; j < cards.length; j++) {
+      if (cards[i].rank === cards[j].rank) count++;
+    }
+    if (count >= 3) return true;
+  }
+  return false;
 }
 
 /**
  * Check if all cards are same suit
+ * Performance: O(N) using manual loop to avoid callback overhead
  */
 function isSuited(cards: Card[]): boolean {
   if (cards.length < 2) return false;
-  return cards.every(c => c.suit === cards[0].suit);
+  const suit = cards[0].suit;
+  for (let i = 1; i < cards.length; i++) {
+    if (cards[i].suit !== suit) return false;
+  }
+  return true;
 }
 
 /**
  * Check if cards form a sequence
+ * Performance: O(N) iteration and O(N^2) insertion sort to avoid Array.sort() allocation overhead for small arrays
  */
 function isSequential(cards: Card[]): boolean {
   if (cards.length < 3) return false;
-  const values = cards.map(getCardValue).sort((a, b) => a - b);
+  const values = new Array(cards.length);
+  for (let i = 0; i < cards.length; i++) {
+    values[i] = getCardValue(cards[i]);
+  }
+
+  // Insertion sort (efficient for small arrays)
+  for (let i = 1; i < values.length; i++) {
+    const key = values[i];
+    let j = i - 1;
+    while (j >= 0 && values[j] > key) {
+      values[j + 1] = values[j];
+      j--;
+    }
+    values[j + 1] = key;
+  }
+
   for (let i = 1; i < values.length; i++) {
     if (values[i] !== values[i - 1] + 1) return false;
   }
