@@ -1,0 +1,3 @@
+## 2024-06-12 - Fast array operations for Combo checks
+**Learning:** For small arrays (N < 20) like hands in a blackjack/poker game, using built-in higher order methods like `.map().some()` or `sort()` with a callback, or creating intermediate objects (e.g. `Record<string, number>`) introduces major garbage collection overhead and is notably slower than plain `for` loops. A manual O(N^2) double-loop for pair checking or an inline insertion sort for sequence checking performs dramatically faster.
+**Action:** Always prefer manual iteration and early-returns over chained array methods when operating inside frequently evaluated combo checks or render functions for bounded small lists.
