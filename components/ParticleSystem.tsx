@@ -250,35 +250,38 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
           return;
         }
 
-        setParticles(prevParticles => 
-          prevParticles.map(p => {
+        setParticles(prevParticles => {
+          // ⚡ Bolt Performance Optimization
+          // Replaced chained .map().filter() inside requestAnimationFrame with a single-pass
+          // for-loop to prevent O(N) intermediate array allocations and reduce GC pressure
+          // during intense burst animations.
+          const nextParticles: Particle[] = [];
+          for (let i = 0; i < prevParticles.length; i++) {
+            const p = prevParticles[i];
             const newLife = p.life + 16;
             const lifeProgress = newLife / p.maxLife;
             
-            // Update position
-            const newVx = p.vx * config.drag;
-            const newVy = p.vy * config.drag + config.gravity;
-            const newX = p.x + newVx;
-            const newY = p.y + newVy;
-            
-            // Update rotation
-            const newRotation = p.rotation + (p.vx * 2);
-
             // Fade out near end of life
-            const newOpacity = lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1;
+            const newOpacity = Math.max(0, lifeProgress > 0.7 ? 1 - (lifeProgress - 0.7) / 0.3 : 1);
 
-            return {
-              ...p,
-              x: newX,
-              y: newY,
-              vx: newVx,
-              vy: newVy,
-              rotation: newRotation,
-              life: newLife,
-              opacity: Math.max(0, newOpacity)
-            };
-          }).filter(p => p.life < p.maxLife && p.opacity > 0)
-        );
+            if (newLife < p.maxLife && newOpacity > 0) {
+              const newVx = p.vx * config.drag;
+              const newVy = p.vy * config.drag + config.gravity;
+
+              nextParticles.push({
+                ...p,
+                x: p.x + newVx,
+                y: p.y + newVy,
+                vx: newVx,
+                vy: newVy,
+                rotation: p.rotation + (p.vx * 2),
+                life: newLife,
+                opacity: newOpacity
+              });
+            }
+          }
+          return nextParticles;
+        });
 
         animationRef.current = requestAnimationFrame(animate);
       };
@@ -476,8 +479,12 @@ export const ContinuousParticles: React.FC<ContinuousParticlesProps> = ({
     setParticles(initialParticles);
 
     const animate = () => {
-      setParticles(prevParticles => 
-        prevParticles.map(p => {
+      setParticles(prevParticles => {
+        // ⚡ Bolt Performance Optimization
+        // Using a manual for-loop inside requestAnimationFrame to prevent O(N) array allocation overhead
+        const nextParticles: Particle[] = [];
+        for (let i = 0; i < prevParticles.length; i++) {
+          const p = prevParticles[i];
           let newX = p.x + p.vx;
           let newY = p.y + p.vy;
 
@@ -489,13 +496,14 @@ export const ContinuousParticles: React.FC<ContinuousParticlesProps> = ({
           if (newX > window.innerWidth) newX = 0;
           if (newX < 0) newX = window.innerWidth;
 
-          return {
+          nextParticles.push({
             ...p,
             x: newX,
             y: newY
-          };
-        })
-      );
+          });
+        }
+        return nextParticles;
+      });
 
       animationRef.current = requestAnimationFrame(animate);
     };
