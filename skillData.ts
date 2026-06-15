@@ -135,7 +135,7 @@ export function getSkillsByPath(path: SpecializationPath): SkillNode[] {
  * Get skill by ID
  */
 export function getSkillById(id: string): SkillNode | undefined {
-  return SKILL_NODES.find(s => s.id === id);
+  return SKILL_NODES_MAP.get(id);
 }
 
 /**
@@ -170,3 +170,5 @@ export const PATH_INFO: Record<SpecializationPath, { name: string; icon: string;
     description: 'Choose a path to begin'
   },
 };
+
+export const SKILL_NODES_MAP = new Map<string, SkillNode>(SKILL_NODES.map(node => [node.id, node]));
