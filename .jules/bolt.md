@@ -1,0 +1,3 @@
+## 2024-05-18 - [Optimize Array.find to Map.get for Configuration Arrays]
+**Learning:** This codebase relies on `Array.find()` to look up configurations inside frequent evaluation loops (e.g., getting combo info, finding bosses by ID, getting joker effects). Since these configuration arrays are static (`BOSS_DATA`, `COMBO_BONUSES`, etc.), chained array methods or O(N) `find` loops create unnecessary bottlenecks over time.
+**Action:** Replace `Array.find()` lookups on static configuration arrays with precomputed `Map` objects (`MAP_NAME = new Map(...)`). Export these maps and use `MAP_NAME.get(key)` for O(1) lookups instead.
