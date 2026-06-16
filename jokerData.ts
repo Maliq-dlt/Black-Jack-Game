@@ -256,8 +256,10 @@ export function getRandomJokers(count: number, excludeIds: string[] = []): Joker
 /**
  * Get joker by ID
  */
+export const JOKERS_MAP = new Map(JOKERS.map(j => [j.id, j]));
+
 export function getJokerById(id: string): Joker | undefined {
-  return JOKERS.find(j => j.id === id);
+  return JOKERS_MAP.get(id);
 }
 
 /**
