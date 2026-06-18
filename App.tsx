@@ -42,8 +42,7 @@ import { GlobalStyles, GameBackground } from './graphics';
 // Icons
 const RefreshIcon = () => <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>;
 
-const App: React.FC = () => {
-  // --- Persistence ---
+
   const loadMeta = (): MetaProgression => {
     const defaults: MetaProgression = {
       totalPrestigePoints: 10,
@@ -125,10 +124,12 @@ const App: React.FC = () => {
       return defaults;
     }
   };
-
+const App: React.FC = () => {
   // --- State ---
-  const initialMeta = loadMeta();
-  const [gameState, setGameState] = useState<GameState>({
+  // OPTIMIZATION: Use lazy initialization to avoid synchronous localStorage read on every render.
+  const [gameState, setGameState] = useState<GameState>(() => {
+    const initialMeta = loadMeta();
+    return {
     deck: [],
     dealerHand: createHand(),
     playerHands: [createHand()],
@@ -173,6 +174,7 @@ const App: React.FC = () => {
       maxInterest: 250,
       lastRestock: Date.now()
     }
+    };
   });
 
   const [peakBankroll, setPeakBankroll] = useState(INITIAL_BANKROLL);
@@ -180,6 +182,7 @@ const App: React.FC = () => {
   const [isDeckViewerOpen, setIsDeckViewerOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isSkillTreeOpen, setIsSkillTreeOpen] = useState(false);
+  // OPTIMIZATION: loadStats is used directly as a lazy initialization function to avoid re-running on render.
   const [lifetimeStats, setLifetimeStats] = useState<LifetimeStats>(loadStats);
   const [pendingAchievement, setPendingAchievement] = useState<Achievement | null>(null);
   const [selectedCardForInfo, setSelectedCardForInfo] = useState<{ card: Card; position: { x: number; y: number } } | null>(null);
