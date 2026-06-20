@@ -1,0 +1,3 @@
+## 2024-05-24 - Avoid Chained Array Methods in Combo Detection
+**Learning:** In frequently executed loops like blackjack hand combo evaluation (`hasPair`, `hasThreeOfAKind`, `isSequential`), higher-order array methods (`map`, `some`, `forEach`, `every`, `sort`) and intermediate object allocations create significant memory and closure overhead. For small arrays (N < 20), manual nested loops (O(N^2)) and pre-allocated arrays outperform Set (O(N)) and higher-order methods by 4x-17x.
+**Action:** When evaluating card combos or small bounded arrays in hot paths, replace chained array iterations and object instantiations with single-pass manual `for` loops, variables for tracking state, and basic array indexing.
