@@ -592,6 +592,9 @@ export const BOSS_DATA: BossData[] = [
   },
 ];
 
+// ⚡ Bolt Performance Optimization: Precomputed O(1) Map lookup for frequent React renders
+export const BOSS_DATA_MAP = new Map(BOSS_DATA.map(boss => [boss.id, boss]));
+
 /**
  * Get boss for a specific stage
  */

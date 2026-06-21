@@ -234,18 +234,22 @@ export const ASCENSION_LEVELS: AscensionLevel[] = [
   },
 ];
 
+// ⚡ Bolt Performance Optimization: O(1) lookups to avoid redundant O(N) array scans during UI renders
+export const RUN_MODES_MAP = new Map(RUN_MODES.map(r => [r.mode, r]));
+export const ASCENSION_LEVELS_MAP = new Map(ASCENSION_LEVELS.map(a => [a.level, a]));
+
 /**
  * Get ascension level by number
  */
 export function getAscensionLevel(level: number): AscensionLevel | undefined {
-  return ASCENSION_LEVELS.find(a => a.level === level);
+  return ASCENSION_LEVELS_MAP.get(level);
 }
 
 /**
  * Get run mode config
  */
 export function getRunModeConfig(mode: RunMode): RunModeConfig | undefined {
-  return RUN_MODES.find(r => r.mode === mode);
+  return RUN_MODES_MAP.get(mode);
 }
 
 /**
