@@ -595,6 +595,8 @@ export const BOSS_DATA: BossData[] = [
 /**
  * Get boss for a specific stage
  */
+export const BOSS_DATA_MAP = new Map(BOSS_DATA.map(b => [b.id, b]));
+
 export function getBossForStage(stage: number): BossData | null {
   return BOSS_DATA.find(boss => boss.stageAppears === stage) || null;
 }
