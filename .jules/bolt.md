@@ -1,0 +1,4 @@
+
+## 2024-05-18 - [Optimization] O(1) Map Lookups for Static Game Data Arrays
+**Learning:** In a highly interactive app where components re-render often (like `App.tsx` and `RunModeScreen.tsx`) or where frequent data lookups occur inside tight rendering loops and combo calculations, using `Array.prototype.find()` on static configuration arrays (e.g. `BOSS_DATA`, `ASCENSION_LEVELS`, `COMBO_BONUSES`) creates unnecessary O(N) bottlenecks. Since these arrays are static, they can be safely precomputed into Maps.
+**Action:** When working with static read-only configuration arrays that need to be queried by ID or type, explicitly create and export a precomputed Map (e.g., `export const DATA_MAP = new Map(DATA.map(d => [d.id, d]))`) alongside the array. Use these maps instead of `.find()` to guarantee O(1) lookup performance, especially within game loops and UI renders.
