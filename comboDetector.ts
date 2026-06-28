@@ -185,38 +185,68 @@ export function detectCombos(
 
 /**
  * Check for pair
+ * ⚡ Bolt: Using manual nested loops instead of map/some for O(N^2) but zero-allocation checks
+ * on small arrays (hands are typically < 10 cards)
  */
 function hasPair(cards: Card[]): boolean {
-  const ranks = cards.map(c => c.rank);
-  return ranks.some((r, i) => ranks.indexOf(r) !== i);
+  const len = cards.length;
+  for (let i = 0; i < len; i++) {
+    for (let j = i + 1; j < len; j++) {
+      if (cards[i].rank === cards[j].rank) return true;
+    }
+  }
+  return false;
 }
 
 /**
  * Check for three of a kind
+ * ⚡ Bolt: Using manual loops to avoid object allocation and closure overhead
  */
 function hasThreeOfAKind(cards: Card[]): boolean {
-  const rankCounts: Record<string, number> = {};
-  cards.forEach(c => {
-    rankCounts[c.rank] = (rankCounts[c.rank] || 0) + 1;
-  });
-  return Object.values(rankCounts).some(count => count >= 3);
+  const len = cards.length;
+  for (let i = 0; i < len; i++) {
+    let count = 1;
+    for (let j = i + 1; j < len; j++) {
+      if (cards[i].rank === cards[j].rank) {
+        count++;
+        if (count >= 3) return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
  * Check if all cards are same suit
+ * ⚡ Bolt: Using manual loop to avoid closure overhead of Array.every
  */
 function isSuited(cards: Card[]): boolean {
-  if (cards.length < 2) return false;
-  return cards.every(c => c.suit === cards[0].suit);
+  const len = cards.length;
+  if (len < 2) return false;
+  const firstSuit = cards[0].suit;
+  for (let i = 1; i < len; i++) {
+    if (cards[i].suit !== firstSuit) return false;
+  }
+  return true;
 }
 
 /**
  * Check if cards form a sequence
+ * ⚡ Bolt: Using pre-allocated array instead of Array.map to reduce GC overhead
  */
 function isSequential(cards: Card[]): boolean {
-  if (cards.length < 3) return false;
-  const values = cards.map(getCardValue).sort((a, b) => a - b);
-  for (let i = 1; i < values.length; i++) {
+  const len = cards.length;
+  if (len < 3) return false;
+
+  // Pre-allocate to avoid dynamic array resizing and map closures
+  const values = new Array(len);
+  for (let i = 0; i < len; i++) {
+    values[i] = getCardValue(cards[i]);
+  }
+
+  values.sort((a, b) => a - b);
+
+  for (let i = 1; i < len; i++) {
     if (values[i] !== values[i - 1] + 1) return false;
   }
   return true;
@@ -227,19 +257,28 @@ function isSequential(cards: Card[]): boolean {
 // ============================================
 
 /**
+ * ⚡ Bolt: Exported Map for O(1) combo data retrieval, avoiding Array.find() overhead
+ */
+export const COMBO_BONUSES_MAP = new Map<ComboType, ComboBonus>(
+  COMBO_BONUSES.map(bonus => [bonus.type, bonus])
+);
+
+/**
  * Calculate total bonus from combos
+ * ⚡ Bolt: Changed to manual loop and O(1) map retrieval to avoid Array.forEach and Array.find
  */
 export function calculateComboBonus(combos: ComboType[]): { mult: number; gold: number } {
   let mult = 0;
   let gold = 0;
+  const len = combos.length;
   
-  combos.forEach(combo => {
-    const bonus = COMBO_BONUSES.find(b => b.type === combo);
+  for (let i = 0; i < len; i++) {
+    const bonus = COMBO_BONUSES_MAP.get(combos[i]);
     if (bonus) {
       mult += bonus.multBonus;
       gold += bonus.goldBonus;
     }
-  });
+  }
   
   return { mult, gold };
 }
@@ -292,9 +331,10 @@ export function updateScoringChain(
 
 /**
  * Get combo info for display
+ * ⚡ Bolt: Using O(1) map retrieval instead of Array.find()
  */
 export function getComboInfo(type: ComboType): ComboBonus | undefined {
-  return COMBO_BONUSES.find(b => b.type === type);
+  return COMBO_BONUSES_MAP.get(type);
 }
 
 // ============================================
