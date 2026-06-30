@@ -1,0 +1,3 @@
+## 2026-06-30 - [Avoid Higher-Order Array Methods on Small Bound Arrays]
+**Learning:** In highly frequent evaluations for small arrays (N < 20, e.g., blackjack hands in `comboDetector.ts`), using higher-order array methods (`map`, `some`, `forEach`, `every`) and intermediate object allocations is surprisingly slower than manual nested loops (O(N^2)). The overhead of object instantiation and closure creation dominates execution time.
+**Action:** When working with frequently executed small bounded array operations, replace higher-order methods and functional chaining with manual `for` loops, pre-allocated fixed-size arrays, and primitive state variables to eliminate redundant allocations and closure overhead.
