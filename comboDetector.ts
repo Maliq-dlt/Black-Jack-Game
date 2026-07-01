@@ -183,23 +183,38 @@ export function detectCombos(
   return combos;
 }
 
+// ⚡ Bolt Performance: Replaced map/some/every with O(N^2) manual nested loops.
+// For small hands (N<20), avoiding object allocations and closure creation
+// drastically improves execution speed and reduces GC pauses.
+
 /**
  * Check for pair
  */
 function hasPair(cards: Card[]): boolean {
-  const ranks = cards.map(c => c.rank);
-  return ranks.some((r, i) => ranks.indexOf(r) !== i);
+  for (let i = 0; i < cards.length; i++) {
+    for (let j = i + 1; j < cards.length; j++) {
+      if (cards[i].rank === cards[j].rank) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
  * Check for three of a kind
  */
 function hasThreeOfAKind(cards: Card[]): boolean {
-  const rankCounts: Record<string, number> = {};
-  cards.forEach(c => {
-    rankCounts[c.rank] = (rankCounts[c.rank] || 0) + 1;
-  });
-  return Object.values(rankCounts).some(count => count >= 3);
+  for (let i = 0; i < cards.length; i++) {
+    let count = 1;
+    for (let j = i + 1; j < cards.length; j++) {
+      if (cards[i].rank === cards[j].rank) {
+        count++;
+        if (count >= 3) return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
@@ -207,7 +222,11 @@ function hasThreeOfAKind(cards: Card[]): boolean {
  */
 function isSuited(cards: Card[]): boolean {
   if (cards.length < 2) return false;
-  return cards.every(c => c.suit === cards[0].suit);
+  const firstSuit = cards[0].suit;
+  for (let i = 1; i < cards.length; i++) {
+    if (cards[i].suit !== firstSuit) return false;
+  }
+  return true;
 }
 
 /**
@@ -215,7 +234,11 @@ function isSuited(cards: Card[]): boolean {
  */
 function isSequential(cards: Card[]): boolean {
   if (cards.length < 3) return false;
-  const values = cards.map(getCardValue).sort((a, b) => a - b);
+  const values: number[] = new Array(cards.length);
+  for (let i = 0; i < cards.length; i++) {
+    values[i] = getCardValue(cards[i]);
+  }
+  values.sort((a, b) => a - b);
   for (let i = 1; i < values.length; i++) {
     if (values[i] !== values[i - 1] + 1) return false;
   }
