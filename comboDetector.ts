@@ -185,38 +185,70 @@ export function detectCombos(
 
 /**
  * Check for pair
+ * Note: Uses manual loops instead of array methods to prevent redundant O(N) allocations for small arrays.
  */
 function hasPair(cards: Card[]): boolean {
-  const ranks = cards.map(c => c.rank);
-  return ranks.some((r, i) => ranks.indexOf(r) !== i);
+  const len = cards.length;
+  for (let i = 0; i < len; i++) {
+    for (let j = i + 1; j < len; j++) {
+      if (cards[i].rank === cards[j].rank) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
  * Check for three of a kind
+ * Note: Uses manual loops instead of array methods to prevent redundant O(N) allocations for small arrays.
  */
 function hasThreeOfAKind(cards: Card[]): boolean {
-  const rankCounts: Record<string, number> = {};
-  cards.forEach(c => {
-    rankCounts[c.rank] = (rankCounts[c.rank] || 0) + 1;
-  });
-  return Object.values(rankCounts).some(count => count >= 3);
+  const len = cards.length;
+  for (let i = 0; i < len; i++) {
+    let count = 1;
+    for (let j = i + 1; j < len; j++) {
+      if (cards[i].rank === cards[j].rank) {
+        count++;
+      }
+    }
+    if (count >= 3) return true;
+  }
+  return false;
 }
 
 /**
  * Check if all cards are same suit
+ * Note: Uses manual loops instead of array methods to prevent redundant O(N) allocations for small arrays.
  */
 function isSuited(cards: Card[]): boolean {
-  if (cards.length < 2) return false;
-  return cards.every(c => c.suit === cards[0].suit);
+  const len = cards.length;
+  if (len < 2) return false;
+  const firstSuit = cards[0].suit;
+  for (let i = 1; i < len; i++) {
+    if (cards[i].suit !== firstSuit) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**
  * Check if cards form a sequence
+ * Note: Uses manual loops instead of array methods to prevent redundant O(N) allocations for small arrays.
  */
 function isSequential(cards: Card[]): boolean {
-  if (cards.length < 3) return false;
-  const values = cards.map(getCardValue).sort((a, b) => a - b);
-  for (let i = 1; i < values.length; i++) {
+  const len = cards.length;
+  if (len < 3) return false;
+
+  const values = new Array(len);
+  for (let i = 0; i < len; i++) {
+    values[i] = getCardValue(cards[i]);
+  }
+
+  values.sort((a, b) => a - b);
+
+  for (let i = 1; i < len; i++) {
     if (values[i] !== values[i - 1] + 1) return false;
   }
   return true;
