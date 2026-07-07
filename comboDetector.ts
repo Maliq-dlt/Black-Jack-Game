@@ -187,36 +187,66 @@ export function detectCombos(
  * Check for pair
  */
 function hasPair(cards: Card[]): boolean {
-  const ranks = cards.map(c => c.rank);
-  return ranks.some((r, i) => ranks.indexOf(r) !== i);
+  // ⚡ Bolt Optimization: Replaced O(N) map/indexOf/some with manual nested loops
+  // to avoid closure overhead and array allocations for small arrays (blackjack hands)
+  const len = cards.length;
+  for (let i = 0; i < len; i++) {
+    for (let j = i + 1; j < len; j++) {
+      if (cards[i].rank === cards[j].rank) return true;
+    }
+  }
+  return false;
 }
 
 /**
  * Check for three of a kind
  */
 function hasThreeOfAKind(cards: Card[]): boolean {
-  const rankCounts: Record<string, number> = {};
-  cards.forEach(c => {
-    rankCounts[c.rank] = (rankCounts[c.rank] || 0) + 1;
-  });
-  return Object.values(rankCounts).some(count => count >= 3);
+  // ⚡ Bolt Optimization: Eliminated object allocation (Record<string, number>) and Object.values().some()
+  // by using manual nested loops. Huge performance gain for small N (<20 cards)
+  const len = cards.length;
+  for (let i = 0; i < len; i++) {
+    let count = 1;
+    for (let j = i + 1; j < len; j++) {
+      if (cards[i].rank === cards[j].rank) {
+        count++;
+        if (count >= 3) return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
  * Check if all cards are same suit
  */
 function isSuited(cards: Card[]): boolean {
-  if (cards.length < 2) return false;
-  return cards.every(c => c.suit === cards[0].suit);
+  // ⚡ Bolt Optimization: Replaced .every() with standard for-loop to avoid closure overhead
+  const len = cards.length;
+  if (len < 2) return false;
+  const firstSuit = cards[0].suit;
+  for (let i = 1; i < len; i++) {
+    if (cards[i].suit !== firstSuit) return false;
+  }
+  return true;
 }
 
 /**
  * Check if cards form a sequence
  */
 function isSequential(cards: Card[]): boolean {
-  if (cards.length < 3) return false;
-  const values = cards.map(getCardValue).sort((a, b) => a - b);
-  for (let i = 1; i < values.length; i++) {
+  // ⚡ Bolt Optimization: Avoided .map() by pre-allocating an array for values, reducing garbage collection
+  const len = cards.length;
+  if (len < 3) return false;
+
+  const values = new Array(len);
+  for (let i = 0; i < len; i++) {
+    values[i] = getCardValue(cards[i]);
+  }
+
+  values.sort((a, b) => a - b);
+
+  for (let i = 1; i < len; i++) {
     if (values[i] !== values[i - 1] + 1) return false;
   }
   return true;
